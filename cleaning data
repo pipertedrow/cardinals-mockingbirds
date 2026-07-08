@@ -1,0 +1,66 @@
+Code to start up 
+(base) genome@Alcala-Lab-3s-iMac ~ % conda deactivate
+
+Activate docker container 
+open -a Docker
+ docker run \
+  -v $(pwd):/data \
+  -it quay.io/qiime2/qiime2:2026.4
+
+
+Code to import files from the UMGC. We must create a manifest so that QIIME can properly read the files. First, group samples into smaller file paths so that each run takes less time. 
+
+set working directory 
+
+cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/01A_sample
+manifest.tsv
+
+Generate correct format (tsv with forward and reverse ends)
+
+echo -e "sample-id\tforward-absolute-filepath\treverse-absolute-filepath" > manifest.tsv
+
+Populate the manifest 
+
+for f in *_R1_*.fastq.gz; do
+  sample=$(echo $f | sed 's/_R1_.*//')
+  r2=$(echo $f | sed 's/_R1_/_R2_/')
+
+  echo -e "$sample\t$PWD/$f\t$PWD/$r2" >> manifest.tsv
+done
+
+Import to QIIME 
+
+qiime tools import \
+  --type 'SampleData[PairedEndSequencesWithQuality]' \
+  --input-path /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/01A_sample/test_run.tsv\
+  --output-path /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/01A_sample/test_demux.qza \
+  --input-format PairedEndFastqManifestPhred33V2
+
+This may freeze the system. Don’t worry it’s there. Continue on with framework. Next create a demultiplexed visual
+
+qiime demux summarize \
+  --i-data 01A_cardinal_demux.qza \
+  --o-visualization 01A_cardinal_demux.qzv
+
+Next, run DADA2 to denoise - must determine forward and reverse truncations based off read quality. Use qiime interactive view, reverse reads seemed to decline in quality after 180 bps ~ 60 minutes
+
+(rachis-qiime2-2026.4) root@ca73a340ffa8:/data/Desktop/Piper/UMGC_Data/Cristol_Project_001# qiime dada2 denoise-paired \
+  --i-demultiplexed-seqs 01A_cardinal_demux.qza \
+  --p-trim-left-f 0 \
+  --p-trunc-len-f 280 \
+  --p-trim-left-r 0 \
+  --p-trunc-len-r 180 \
+  --p-n-threads 5 \
+  --o-representative-sequences 01A_cardinal_asv-seqs.qza \
+  --o-table 01A_cardinal_asv-table.qza \
+  --o-denoising-stats 01A_cardinal_denoising-stats.qza \
+  --o-base-transition-stats 01A_cardinal_base-transition-stats.qza
+
+Up next is to use SeqTK and subsample data to test whole path. Choose seed number same for forward and reverse. For example 01A_cardinal smaller reads os 400k thus set subsample to randomly analyze 200k reads
+
+
+seqtk sample -s100 01-e-mb-C05_S1_R1_001.fastq.gz 200000 | gzip > 01-e-mb-C05_S1_R1_200k.fastq.gz
+
+seqtk sample -s100 01-e-mb-C05_S1_R2_001.fastq.gz 200000 | gzip > 01-e-mb-C05_S1_R2_200k.fastq.gz
+
+Workflow - subsample 200k reads random seed, demultiplex, dada2 
