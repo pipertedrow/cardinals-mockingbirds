@@ -51,3 +51,17 @@ for group in "$OUT_DIR"/*/; do
   cd "$OUT_DIR"
 done
 
+now demux
+
+qiime tools import \
+  --type 'SampleData[PairedEndSequencesWithQuality]' \
+  --input-path /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_cardinal/manifest.tsv \
+  --output-path /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_cardinal/eggshell_cardinal_demux.qza \
+  --input-format PairedEndFastqManifestPhred33V2
+
+demux visualize 
+
+qiime demux summarize \
+  --i-data /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_cardinal/eggshell_cardinal_demux.qza \
+  --o-visualization /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_cardinal/eggshell_cardinal_demux.qzv
+
