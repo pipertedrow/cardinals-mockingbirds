@@ -32,3 +32,22 @@ echo "Done. Group counts:"
 for d in "$OUT_DIR"/*/; do
   echo "$(basename "$d"): $(ls "$d" | wc -l) files"
 done
+
+now make manifest files --> this step is before demultiplex to then normalize sequence lengths  
+
+for group in "$OUT_DIR"/*/; do
+  group_name=$(basename "$group")
+  [ "$group_name" == "controls" ] && continue  # skip if you don't want to import controls separately
+
+  cd "$group"
+  echo -e "sample-id\tforward-absolute-filepath\treverse-absolute-filepath" > manifest.tsv
+
+  for f in *_R1_001.fastq.gz; do
+    sample=$(echo "$f" | sed 's/_R1_.*//')
+    r2=$(echo "$f" | sed 's/_R1_/_R2_/')
+    echo -e "$sample\t$PWD/$f\t$PWD/$r2" >> manifest.tsv
+  done
+
+  cd "$OUT_DIR"
+done
+
