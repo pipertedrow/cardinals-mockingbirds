@@ -64,3 +64,14 @@ seqtk sample -s100 01-e-mb-C05_S1_R1_001.fastq.gz 200000 | gzip > 01-e-mb-C05_S1
 seqtk sample -s100 01-e-mb-C05_S1_R2_001.fastq.gz 200000 | gzip > 01-e-mb-C05_S1_R2_200k.fastq.gz
 
 Workflow - subsample 200k reads random seed, demultiplex, dada2 
+
+qiime feature-table summarize \
+  --i-table test_asv-table.qza \
+  --m-metadata-file sample-metadata.tsv \
+  --o-summary test_asv-table.qzv \
+  --o-sample-frequencies test_asv-sample-frequencies.qza \
+  --o-feature-frequencies test_asv-frequencies.qza
+
+
+
+
