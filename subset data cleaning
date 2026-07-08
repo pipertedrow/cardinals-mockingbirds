@@ -1,0 +1,56 @@
+conda deactivate
+open -a Docker
+docker run \
+  -v $(pwd):/data \
+  -it quay.io/qiime2/qiime2:2026.4
+
+cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/01A_sample
+
+mkdir -p test_subset
+
+for r1 in *_R1_*.fastq.gz; do
+  r2=$(echo $r1 | sed 's/_R1_/_R2_/')
+  sample=$(echo $r1 | sed 's/_R1_.*//')
+
+  seqtk sample -s100 $r1 200000 | gzip > test_subset/${sample}_R1_200k.fastq.gz
+  seqtk sample -s100 $r2 200000 | gzip > test_subset/${sample}_R2_200k.fastq.gz
+done
+
+cd test_subset
+
+echo -e "sample-id\tforward-absolute-filepath\treverse-absolute-filepath" > test_manifest.tsv
+
+for f in *_R1_200k.fastq.gz; do
+  sample=$(echo $f | sed 's/_R1_200k.fastq.gz//')
+  r2=$(echo $f | sed 's/_R1_/_R2_/')
+  echo -e "$sample\t$PWD/$f\t$PWD/$r2" >> test_manifest.tsv
+done
+
+qiime tools import \
+  --type 'SampleData[PairedEndSequencesWithQuality]' \
+  --input-path test_manifest.tsv \
+  --output-path test_demux.qza \
+  --input-format PairedEndFastqManifestPhred33V2
+
+qiime demux summarize \
+  --i-data test_demux.qza \
+  --o-visualization test_demux.qzv
+
+qiime dada2 denoise-paired \
+  --i-demultiplexed-seqs test_demux.qza \
+  --p-trim-left-f 0 \
+  --p-trunc-len-f 280 \
+  --p-trim-left-r 0 \
+  --p-trunc-len-r 180 \
+  --p-n-threads 5 \
+  --o-representative-sequences test_asv-seqs.qza \
+  --o-table test_asv-table.qza \
+  --o-denoising-stats test_denoising-stats.qza \
+  --o-base-transition-stats test_base-transition-stats.qza
+
+qiime feature-table summarize \
+  --i-table test_asv-table.qza \
+  --m-metadata-file sample-metadata.tsv \
+  --o-summary test_asv-table.qzv \
+  --o-sample-frequencies test_asv-sample-frequencies.qza \
+  --o-feature-frequencies test_asv-frequencies.qza
