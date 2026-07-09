@@ -65,3 +65,21 @@ qiime demux summarize \
   --i-data /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_cardinal/eggshell_cardinal_demux.qza \
   --o-visualization /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_cardinal/eggshell_cardinal_demux.qzv
 
+qiime dada2 denoise-paired \
+  --i-demultiplexed-seqs /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_cardinal/eggshell_cardinal_demux.qza \
+  --p-trim-left-f 0 \
+  --p-trim-left-r 0 \
+  --p-trunc-len-f 180 \
+  --p-trunc-len-r 180 \
+  --p-n-threads 2 \
+  --o-representative-sequences /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_cardinal/eggshell_cardinal_rep-seqs.qza \
+  --o-table /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_cardinal/eggshell_cardinal_table.qza \
+  --o-denoising-stats /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_cardinal/eggshell_cardinal_denoising-stats.qza \
+  --o-base-transition-stats /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_cardinal/eggshell_cardinal_base-transition-stats.qza \
+  --verbose
+
+qiime metadata tabulate \
+  --m-input-file /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_cardinal/eggshell_cardinal_base-transition-stats.qza \
+  --o-visualization /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_cardinal/eggshell_cardinal_base-transition-stats.qzv
+
+
