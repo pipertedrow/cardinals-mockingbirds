@@ -83,3 +83,21 @@ qiime metadata tabulate \
   --o-visualization /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_cardinal/eggshell_cardinal_base-transition-stats.qzv
 
 
+qiime feature-table summarize \
+  --i-table asv-table.qza \
+  --m-metadata-file sample-metadata.tsv \
+  --o-summary asv-table.qzv \
+  --o-sample-frequencies sample-frequencies.qza \
+  --o-feature-frequencies asv-frequencies.qza
+
+qiime feature-table tabulate-seqs \
+  --i-data asv-seqs.qza \
+  --m-metadata-file asv-frequencies.qza \
+  --o-visualization asv-seqs.qzv
+
+qiime feature-table filter-features \
+  --i-table asv-table.qza \
+  --p-min-samples 2 \
+  --o-filtered-table asv-table-ms2.qza
+
+
