@@ -1,0 +1,47 @@
+---I’m going to choose values that is around the first quartile of the sample total frequencies.
+
+qiime boots kmer-diversity \
+  --i-table eggshell_cardinal_table-ms2.qza \
+  --i-sequences eggshell_cardinal_rep-seqs-ms2.qza \
+  --m-metadata-file manifest.tsv \
+  --p-sampling-depth 96 \
+  --p-n 10 \
+  --p-replacement \
+  --p-alpha-average-method median \
+  --p-beta-average-method medoid \
+  --output-dir eggshell_cardinal_boots-kmer-diversity
+
+# Alpha rarfraction
+qiime diversity alpha-rarefaction \
+  --i-table eggshell_cardinal_table-ms2.qza \
+  --p-max-depth 260 \
+  --m-metadata-file manifest.tsv \
+  --o-visualization eggshell_cardinal_alpha-rarefaction.qzv
+
+# Taxa Barplot
+qiime taxa barplot \
+  --i-table eggshell_cardinal_table-ms2.qza \
+  --i-taxonomy eggshell_cardinal_taxonomy.qza \
+  --m-metadata-file manifest.tsv \
+  --o-visualization eggshell_cardinal_taxa-bar-plots.qzv
+
+#Differenital Abundance Anaylsis
+#this step is for when i put all my samples together 
+qiime feature-table filter-samples \
+  --i-table eggshell_cardinal_table-ms2.qza \
+  --m-metadata-file manifest.tsv \
+  --p-where '[sample-id] IN ("Cardinal Eggshell")' \
+  --o-filtered-table eggshell_cardinal_table-ms2-dominant-sample-types.qza
+
+KEY FILES for META ANALYSIS
+1) Feature table contains ASV counts per sample - the core data for all downstream analysis
+eggshell_cardinal_table-ms2.qza
+
+2) Representitive Sequences contains actual ASV sequences needed for phylogenetic diversity 
+eggshell_cardinal_rep-seqs-ms2.qza
+
+3) Taxonomy contains taxa classifications for all ASVS 
+eggshell_cardinal_taxonomy.qza
+
+4) Denoising Statistics tracks read retention across samples 
+eggshell_cardinal_denoising-stats-ms2.qza
