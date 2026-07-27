@@ -1,0 +1,54 @@
+Go to SILVA and select SSU V4 region 
+https://www.arb-silva.de/current-release/QIIME2
+
+
+Command N to open new terminal 
+----- silva is not up to date with QIIME!!!-----
+Download SILVA SSU v4 region 
+cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_cardinal
+
+wget -O SILVA138.2_SSURef_NR99_uniform_classifier_V4-515f-806r.qza \
+  'https://www.arb-silva.de/fileadmin/silva_databases/current/QIIME2/2025.7/SSU/V4-515f-806r/uniform/SILVA138.2_SSURef_NR99_uniform_classifier_V4-515f-806r.qza'
+----------------------------------------------
+
+ qiime feature-classifier classify-sklearn \
+  --i-classifier SILVA138.2_SSURef_NR99_uniform_classifier_V4-515f-806r.qza \
+  --i-reads eggshell_cardinal_rep-seqs-ms2.qza \
+  --o-classification eggshell_cardinal_taxonomy.qza
+
+
+# 1. Download pre-trimmed V4 references
+wget https://data.qiime2.org/2024.10/common/silva-138-99-seqs-515-806.qza
+wget https://data.qiime2.org/2024.10/common/silva-138-99-tax.qza
+
+# Check QIIME2 resources page classifier list
+wget https://data.qiime2.org/classifiers/sklearn-1.4.2/silva/silva-138-99-515-806-nb-classifier.qza
+
+# Step 1: Extract V4 region first (much smaller dataset)
+qiime feature-classifier extract-reads \
+  --i-sequences silva-138-99-seqs-515-806.qza \
+  --p-f-primer GTGYCAGCMGCCGCGGTAA \
+  --p-r-primer GGACTACNVGGGTWTCTAAT \
+  --p-min-length 100 \
+  --p-max-length 400 \
+  --o-reads silva138_V4_extracted.qza
+
+# Step 2: Train on smaller extracted reads
+qiime feature-classifier fit-classifier-naive-bayes \
+  --i-reference-reads silva138_V4_extracted.qza \
+  --i-reference-taxonomy silva-138-99-tax.qza \
+  --o-classifier silva138_V4_retrained_2026.4.qza
+
+# Step 3: Classify
+qiime feature-classifier classify-sklearn \
+  --i-classifier silva138_V4_retrained_2026.4.qza \
+  --i-reads eggshell_cardinal_rep-seqs-ms2.qza \
+  --o-classification eggshell_cardinal_taxonomy.qza
+
+# Step 4: Taxa with Sequence Summary
+qiime feature-table tabulate-seqs \
+  --i-data eggshell_cardinal_rep-seqs-ms2.qza \
+  --i-taxonomy eggshell_cardinal_taxonomy.qza \
+  --o-visualization eggshell_cardinal_rep-seqs-ms2.qzv
+
+We have now visualized the taxanomically classified ASVs. Next it is time for analysis 
