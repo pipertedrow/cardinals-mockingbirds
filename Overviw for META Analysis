@@ -1,0 +1,32 @@
+1) Clean all groups separately 
+cardinal_nest_swabs_table-ms2.qza
+cardinal_nest_material_table-ms2.qza
+mockingbird_eggshell_table-ms2.qza
+mockingbird_nest_swabs_table-ms2.qza
+mockingbird_nest_material_table-ms2.qza
+
+2) Merge all feature tables 
+qiime feature-table merge \
+  --i-tables eggshell_cardinal_table-ms2.qza \
+  --i-tables cardinal_nest_swabs_table-ms2.qza \
+  --i-tables cardinal_nest_material_table-ms2.qza \
+  --i-tables mockingbird_eggshell_table-ms2.qza \
+  --i-tables mockingbird_nest_swabs_table-ms2.qza \
+  --i-tables mockingbird_nest_material_table-ms2.qza \
+  --o-merged-table merged_all_groups_table.qza
+
+3) Merge All Rep Sequences 
+qiime feature-table merge-seqs \
+  --i-data eggshell_cardinal_rep-seqs-ms2.qza \
+  --i-data cardinal_nest_swabs_rep-seqs-ms2.qza \
+  --i-data cardinal_nest_material_rep-seqs-ms2.qza \
+  --i-data mockingbird_eggshell_rep-seqs-ms2.qza \
+  --i-data mockingbird_nest_swabs_rep-seqs-ms2.qza \
+  --i-data mockingbird_nest_material_rep-seqs-ms2.qza \
+  --o-merged-data merged_all_groups_rep-seqs.qza
+
+4) Create a Combined Meta data file 
+sample-id	SampleType	Species	NestComponent
+Cardinal_Egg_1	Eggshell	Cardinal	Eggshell
+Cardinal_NestSwab_1	Nest Swab	Cardinal	Nest Swab
+Mockingbird_Egg_1	Eggshell	Mockingbird	Eggshell
