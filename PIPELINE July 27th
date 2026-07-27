@@ -132,3 +132,95 @@ qiime feature-table filter-seqs \
   --o-filtered-data eggshell_mockingbirdASV-seqs-ms2.qza
 
 --- Taxanomic Annotation --- 
+
+#1 Download pre-trimmed V4 references
+wget https://data.qiime2.org/2024.10/common/silva-138-99-seqs-515-806.qza
+wget https://data.qiime2.org/2024.10/common/silva-138-99-tax.qza
+
+#2 Check QIIME2 resources page classifier list
+wget https://data.qiime2.org/classifiers/sklearn-1.4.2/silva/silva-138-99-515-806-nb-classifier.qza
+
+#3 Extract V4 region first
+#based on 515F/806R primers same as tutorial
+qiime feature-classifier extract-reads \
+  --i-sequences silva-138-99-seqs-515-806.qza \
+  --p-f-primer GTGYCAGCMGCCGCGGTAA \
+  --p-r-primer GGACTACNVGGGTWTCTAAT \
+  --p-min-length 100 \
+  --p-max-length 400 \
+  --o-reads silva138_V4_extracted.qza
+
+#4 Train on smaller extracted reads
+qiime feature-classifier fit-classifier-naive-bayes \
+  --i-reference-reads silva138_V4_extracted.qza \
+  --i-reference-taxonomy silva-138-99-tax.qza \
+  --o-classifier silva138_V4_retrained_2026.4.qza
+
+#5 Classify
+qiime feature-classifier classify-sklearn \
+  --i-classifier silva138_V4_retrained_2026.4.qza \
+  --i-reads eggshell_cardinal_rep-seqs-ms2.qza \
+  --o-classification eggshell_cardinal_taxonomy.qza
+
+#6 Taxa with Sequence Summary
+qiime feature-table tabulate-seqs \
+  --i-data eggshell_cardinal_rep-seqs-ms2.qza \
+  --i-taxonomy eggshell_cardinal_taxonomy.qza \
+  --o-visualization eggshell_cardinal_rep-seqs-ms2.qzv
+
+We have now visualized the taxanomically classified ASVs. Next it is time for analysis 
+
+--- Downstream Analysis ---
+I’m going to choose values that is around the first quartile of the sample total frequencies
+
+qiime boots kmer-diversity \
+  --i-table eggshell_cardinal_table-ms2.qza \
+  --i-sequences eggshell_cardinal_rep-seqs-ms2.qza \
+  --m-metadata-file manifest.tsv \
+  --p-sampling-depth 96 \
+  --p-n 10 \
+  --p-replacement \
+  --p-alpha-average-method median \
+  --p-beta-average-method medoid \
+  --output-dir eggshell_cardinal_boots-kmer-diversity
+
+# Alpha rarefraction
+qiime diversity alpha-rarefaction \
+  --i-table eggshell_cardinal_table-ms2.qza \
+  --p-max-depth 260 \
+  --m-metadata-file manifest.tsv \
+  --o-visualization eggshell_cardinal_alpha-rarefaction.qzv
+
+# Taxa Barplot
+qiime taxa barplot \
+  --i-table eggshell_cardinal_table-ms2.qza \
+  --i-taxonomy eggshell_cardinal_taxonomy.qza \
+  --m-metadata-file manifest.tsv \
+  --o-visualization eggshell_cardinal_taxa-bar-plots.qzv
+
+Repeat for each group 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
