@@ -1,0 +1,19 @@
+After DADA2! 
+
+Set working directory for eggshell_cardinal outputs
+cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_cardinal
+
+
+# --- eggshell_cardinal: tabulate DADA2 denoising stats ---
+qiime metadata tabulate \
+  --m-input-file eggshell_cardinal_denoising-stats.qza \
+  --o-visualization eggshell_cardinal_denoising-stats.qzv
+
+---generate feature table ----
+ qiime feature-table summarize \
+  --i-table eggshell_cardinal_table.qza \
+  --m-metadata-file manifest.tsv \
+  --o-summary eggshell_cardinal_table.qzv \
+  --o-sample-frequencies eggshell_cardinal_sample-frequencies.qza \
+  --o-feature-frequencies eggshell_cardinal_feature-frequencies.qza
+
