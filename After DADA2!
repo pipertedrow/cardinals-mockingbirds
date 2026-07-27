@@ -17,3 +17,31 @@ qiime metadata tabulate \
   --o-sample-frequencies eggshell_cardinal_sample-frequencies.qza \
   --o-feature-frequencies eggshell_cardinal_feature-frequencies.qza
 
+
+# --- eggshell_cardinal: tabulate representative sequences ---
+qiime feature-table tabulate-seqs \
+  --i-data eggshell_cardinal_rep-seqs.qza \
+  --m-metadata-file eggshell_cardinal_feature-frequencies.qza \
+  --o-visualization eggshell_cardinal_rep-seqs.qzv
+
+# --- eggshell_cardinal: filter feature table (min 2 samples) ---
+qiime feature-table filter-features \
+  --i-table eggshell_cardinal_table.qza \
+  --p-min-samples 2 \
+  --o-filtered-table eggshell_cardinal_table-ms2.qza
+
+#----filtered sequences
+qiime feature-table filter-seqs \
+  --i-data eggshell_cardinal_rep-seqs.qza \
+  --i-table eggshell_cardinal_table-ms2.qza \
+  --o-filtered-data eggshell_cardinal_rep-seqs-ms2.qza
+
+#----generate a feature table again minimum to 2 samples
+qiime feature-table summarize \
+  --i-table eggshell_cardinal_table-ms2.qza \
+  --m-metadata-file manifest.tsv \
+  --o-summary eggshell_cardinal_table-ms2.qzv \
+  --o-sample-frequencies eggshell_cardinal_sample-frequencies-ms2.qza \
+  --o-feature-frequencies eggshell_cardinal_feature-frequencies-ms2.qza
+
+We have now generated ASVs tables with a minimum of 2 samples. Next, we will taxanomically classify these ASVs 
