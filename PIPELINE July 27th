@@ -171,13 +171,13 @@ qiime feature-table tabulate-seqs \
 We have now visualized the taxanomically classified ASVs. Next it is time for analysis 
 
 --- Downstream Analysis ---
-I’m going to choose values that is around the first quartile of the sample total frequencies
+I’m going to choose values that are around the first quartile of the sample total frequencies (~126000)
 
 qiime boots kmer-diversity \
   --i-table eggshell_cardinal_table-ms2.qza \
   --i-sequences eggshell_cardinal_rep-seqs-ms2.qza \
   --m-metadata-file manifest.tsv \
-  --p-sampling-depth 96 \
+  --p-sampling-depth 96 \  # set sequencing depth from tutorial 
   --p-n 10 \
   --p-replacement \
   --p-alpha-average-method median \
@@ -187,7 +187,7 @@ qiime boots kmer-diversity \
 # Alpha rarefraction
 qiime diversity alpha-rarefaction \
   --i-table eggshell_cardinal_table-ms2.qza \
-  --p-max-depth 260 \
+  --p-max-depth 260 \  # median frequency from tutorial 
   --m-metadata-file manifest.tsv \
   --o-visualization eggshell_cardinal_alpha-rarefaction.qzv
 
