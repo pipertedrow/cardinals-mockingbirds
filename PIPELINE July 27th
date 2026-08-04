@@ -62,6 +62,9 @@ for group in "$OUT_DIR"/*/; do
 
   cd "$OUT_DIR"
 done
+
+cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_cardinal
+
 --- Visualize the Meta Data ---
 qiime metadata tabulate \
   --m-input-file manifest.tsv \
@@ -71,31 +74,35 @@ qiime metadata tabulate \
 # basically parses out and organizes files 
 qiime tools import \
   --type 'SampleData[PairedEndSequencesWithQuality]' \
-  --input-path /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_mockingbird/manifest.tsv \
-  --output-path /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_mockingbird/eggshell_mockingbird_demux.qza \
+  --input-path /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_cardinal/manifest.tsv \
+  --output-path /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_cardinal/nestswab_cardinal_demux.qza \
   --input-format PairedEndFastqManifestPhred33V2
 
 --- Visualize the Demultiplexed Data --- 
 #after visualizing, determien the truncation lengths for DADA2 with the graphs generated 
 qiime demux summarize \
-  --i-data /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_mockingbird/eggshell_mockingbird_demux.qza \
-  --o-visualization /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_mockingbird/eggshell_mockingbird_demux.qzv
+  --i-data /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_cardinal/nestswab_cardinal_demux.qza \
+  --o-visualization /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_cardinal/nestswab_cardinal_demux.qzv
 
 --- DADA2 Clean the Data --- 
 #this step takes up to 48 hours
 qiime dada2 denoise-paired \
-  --i-demultiplexed-seqs /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_mockingbird/eggshell_mockingbird_demux.qza \
+  --i-demultiplexed-seqs /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_cardinal/nestswab_cardinal_demux.qza \
   --p-trim-left-f 0 \
   --p-trim-left-r 0 \
   --p-trunc-len-f 260 \
   --p-trunc-len-r 180 \
   --p-n-threads 2 \
-  --o-representative-sequences /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_mockingbird/eggshell_mockingbird_rep-seqs.qza \
-  --o-table /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_mockingbird/eggshell_mockingbird_table.qza \
-  --o-denoising-stats /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_mockingbird/eggshell_mockingbird_denoising-stats.qza \
-  --o-base-transition-stats /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_mockingbird/eggshell_mockingbird_base-transition-stats.qza \
+  --o-representative-sequences /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_cardinal/nestswab_cardinal_rep-seqs.qza \
+  --o-table /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_cardinal/nestswab_cardinal_table.qza \
+  --o-denoising-stats /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_cardinal/nestswab_cardinal_denoising-stats.qza \
+  --o-base-transition-stats /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_cardinal/nestswab_cardinal_base-transition-stats.qza \
   --verbose
-
+---side bar---
+eggshell cardinal = f240 to r180
+eggshell mockingbird = f260 to r180 
+nest swab cardinal = f260 to r180
+----------------
 OKAY! Assuming it is a new day 
 # Set working directory for eggshell_mockingbird outputs
 cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_mockingbird
