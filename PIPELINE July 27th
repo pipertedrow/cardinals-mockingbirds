@@ -84,24 +84,24 @@ qiime demux summarize \
   --i-data /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_cardinal/nestswab_cardinal_demux.qza \
   --o-visualization /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_cardinal/nestswab_cardinal_demux.qzv
 
---- DADA2 Clean the Data --- 
-#this step takes up to 48 hours
+# this step takes up to 48 hours
 qiime dada2 denoise-paired \
-  --i-demultiplexed-seqs /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_cardinal/nestswab_cardinal_demux.qza \
+  --i-demultiplexed-seqs /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_mockingbird/nestswab_mockingbird_demux.qza \
   --p-trim-left-f 0 \
   --p-trim-left-r 0 \
-  --p-trunc-len-f 260 \
+  --p-trunc-len-f 220 \
   --p-trunc-len-r 180 \
-  --p-n-threads 2 \
-  --o-representative-sequences /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_cardinal/nestswab_cardinal_rep-seqs.qza \
-  --o-table /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_cardinal/nestswab_cardinal_table.qza \
-  --o-denoising-stats /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_cardinal/nestswab_cardinal_denoising-stats.qza \
-  --o-base-transition-stats /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_cardinal/nestswab_cardinal_base-transition-stats.qza \
+  --p-n-threads 6 \
+  --o-representative-sequences /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_mockingbird/nestswab_mockingbird_rep-seqs.qza \
+  --o-table /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_mockingbird/nestswab_mockingbird_table.qza \
+  --o-denoising-stats /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_mockingbird/nestswab_mockingbird_denoising-stats.qza \
+  --o-base-transition-stats /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_mockingbird/nestswab_mockingbird_base-transition-stats.qza \
   --verbose
 ---side bar---
 eggshell cardinal = f240 to r180
 eggshell mockingbird = f260 to r180 
 nest swab cardinal = f260 to r180
+nest swab mockingbird = f220 t0 r180
 ----------------
 OKAY! Assuming it is a new day 
 # Set working directory for eggshell_mockingbird outputs
