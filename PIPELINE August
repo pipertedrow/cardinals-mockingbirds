@@ -221,4 +221,29 @@ qiime taxa barplot \
 
 YAY!!!! next is differential abundance analysis 
 
---- Differential Abundance analysis 
+--- Differential Abundance analysis ---
+
+##Species filtered table Mockingbird and Cardinal 
+qiime feature-table filter-samples \
+  --i-table asv-table30k-ms2.qza \
+  --m-metadata-file manifest30k-annotated.tsv \
+  --p-where '[Species] IN ("cardinal", "mockingbird")' \
+  --o-filtered-table asv-table30k-ms2-cardinal-mockingbird.qza
+
+##Ancombc2 run on species filtered table 
+qiime composition ancombc2 \
+  --i-table asv-table30k-ms2-cardinal-mockingbird.qza \
+  --m-metadata-file manifest30k-annotated.tsv \
+  --p-fixed-effects-formula 'Species' \
+  --p-reference-levels 'Species::mockingbird' \
+  --o-ancombc2-output ancombc2-results-cardinal-mockingbird.qza
+
+## visualize differential abundance 
+qiime composition da-barplot \
+  --i-data ancombc2-results-cardinal-mockingbird.qza \
+  --i-taxonomy taxonomy30k.qza \
+  --o-visualization ancombc2-barplot-cardinal-mockingbird.qzv
+
+
+
+
