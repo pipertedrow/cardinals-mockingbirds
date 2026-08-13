@@ -44,6 +44,11 @@ for d in "$OUT_DIR"/*/; do
 done
 
 --- Make Manifest for Each Folder --- 
+
+qiime metadata tabulate \
+  --m-input-file manifest.tsv \
+  --o-visualization manifest.qzv
+
 #redundant step but completed for all 6 sample groups
 now make manifest files --> this step is before demultiplex to then normalize sequence lengths  
 
