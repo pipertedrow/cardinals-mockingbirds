@@ -1,0 +1,2 @@
+Using all samples I will generate a histogram to see average reads per sample. Then I subset the data 30k maybe and run DADA2, 
+taxanomic classifications and downstream analysis
