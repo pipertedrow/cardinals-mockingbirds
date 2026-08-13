@@ -41,36 +41,62 @@ qiime demux summarize \
   --i-data paired-end-demux.qza \
   --o-visualization paired-end-demux.qzv
 
---- Subset Data for DADA2 ---
-#use visual histogram to see minimum number of reads per sample 
+--- Subset Data with Seqtk ---
+#use visual histogram to see minimum number of reads per sample
+#set seed to same for every file to randomly samples
 
+#to download seqtk function
+apt-get update && apt-get install -y seqtk
 
+mkdir -p subset_allsamples
 
+for r1 in *_R1_*.fastq.gz; do
+r2=$(echo $r1 | sed 's/_R1_/_R2_/')
+sample=$(echo $r1 | sed 's/_R1_.*//')
 
+seqtk sample -s100 $r1 30000 | gzip > subset_allsamples/${sample}_R1_30k.fastq.gz
+seqtk sample -s100 $r2 30000 | gzip > subset_allsamples/${sample}_R2_30k.fastq.gz
+done
 
+7) --- Working with Subset Data Now ---
+# now that the data is subset, set new working directory, generate a manifest and visualize read lengths for the subset data.
+# so repeat steps 2-5 for subset_allsamples
 
+cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/all_samples/subset_allsamples
 
+2 again) --- Create Manifest ---
+#Create the header first
+echo -e "sample-id\tforward-absolute-filepath\treverse-absolute-filepath" > manifest30k.tsv
+
+#Then automatically add all your samples
+for f in *_R1_30k.fastq.gz; do
+sample="${f/_R1_30k.fastq.gz/}"
+forward="$(pwd)/${f}"
+reverse="$(pwd)/${f/_R1_30k.fastq.gz/_R2_30k.fastq.gz}"
+echo -e "${sample}\t${forward}\t${reverse}" >> manifest30k.tsv
+done
+
+3 again) --- Visualize the Meta Data ---
+qiime metadata tabulate \
+--m-input-file manifest30k.tsv \
+--o-visualization manifest30k.qzv
 
 
 # this step takes up to 48 hours
 qiime dada2 denoise-paired \
-  --i-demultiplexed-seqs /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_mockingbird/nestswab_mockingbird_demux.qza \
+  --i-demultiplexed-seqs paired-end-demux30k.qza \
   --p-trim-left-f 0 \
   --p-trim-left-r 0 \
-  --p-trunc-len-f 220 \
+  --p-trunc-len-f 240 \
   --p-trunc-len-r 180 \
-  --p-n-threads 6 \
-  --o-representative-sequences /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_mockingbird/nestswab_mockingbird_rep-seqs.qza \
-  --o-table /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_mockingbird/nestswab_mockingbird_table.qza \
-  --o-denoising-stats /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_mockingbird/nestswab_mockingbird_denoising-stats.qza \
-  --o-base-transition-stats /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_mockingbird/nestswab_mockingbird_base-transition-stats.qza \
+  --p-n-threads 8 \
+  --o-representative-sequences asv-seqs30k.qza \
+  --o-table asv-table30k.qza \
+  --o-denoising-stats denoising-stats30k.qza \
+  --o-base-transition-stats base-transition-stats30k.qza \
   --verbose
----side bar---
-eggshell cardinal = f240 to r180
-eggshell mockingbird = f260 to r180 
-nest swab cardinal = f260 to r180
-nest swab mockingbird = f220 t0 r180
-----------------
+
+
 OKAY! Assuming it is a new day 
 # Set working directory for eggshell_mockingbird outputs
 cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_mockingbird
