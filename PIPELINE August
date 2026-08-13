@@ -1,7 +1,7 @@
 Using all samples I will generate a histogram to see average reads per sample. Then I subset the data 30k maybe and run DADA2, 
 taxanomic classifications and downstream analysis
 
---- Start up ---
+1) --- Start up ---
 conda deactivate 
 Activate docker container 
 open -a Docker
@@ -10,7 +10,7 @@ open -a Docker
   -it quay.io/qiime2/qiime2:2026.4
 cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/all_samples
 
---- Create Manifest ---
+2) --- Create Manifest ---
 Create the header first
 echo -e "sample-id\tforward-absolute-filepath\treverse-absolute-filepath" > manifest.tsv
 
@@ -22,12 +22,12 @@ for f in *_R1_001.fastq.gz; do
     echo -e "${sample}\t${forward}\t${reverse}" >> manifest.tsv
 done
 
---- Visualize the Meta Data ---
+3) --- Visualize the Meta Data ---
 qiime metadata tabulate \
   --m-input-file manifest.tsv \
   --o-visualization manifest.qzv
 
---- Demultiplex Data ---
+4) --- Demultiplex Data ---
 # basically parses out and organizes files 
 qiime tools import \
   --type 'SampleData[PairedEndSequencesWithQuality]' \
@@ -35,13 +35,13 @@ qiime tools import \
   --output-path paired-end-demux.qza \
   --input-format PairedEndFastqManifestPhred33V2
 
---- Visualize the Demultiplexed Data --- 
+5) --- Visualize the Demultiplexed Data --- 
 #after visualizing, determien the truncation lengths for DADA2 with the graphs generated 
 qiime demux summarize \
   --i-data paired-end-demux.qza \
   --o-visualization paired-end-demux.qzv
 
---- Subset Data with Seqtk ---
+6) --- Subset Data with Seqtk ---
 #use visual histogram to see minimum number of reads per sample
 #set seed to same for every file to randomly samples
 
@@ -81,8 +81,21 @@ qiime metadata tabulate \
 --m-input-file manifest30k.tsv \
 --o-visualization manifest30k.qzv
 
+4 again) --- Demultiplex Data ---
+# basically parses out and organizes files 
+qiime tools import \
+  --type 'SampleData[PairedEndSequencesWithQuality]' \
+  --input-path manifest30k.tsv \
+  --output-path paired-end-demux30k.qza \
+  --input-format PairedEndFastqManifestPhred33V2
 
-# this step takes up to 48 hours
+5 again) --- Visualize the Demultiplexed Data --- 
+#after visualizing, determien the truncation lengths for DADA2 with the graphs generated 
+qiime demux summarize \
+  --i-data paired-end-demux30k.qza \
+  --o-visualization paired-end-demux30k.qzv
+
+8) --- DADA2 ---
 qiime dada2 denoise-paired \
   --i-demultiplexed-seqs paired-end-demux30k.qza \
   --p-trim-left-f 0 \
@@ -98,12 +111,12 @@ qiime dada2 denoise-paired \
 
 
 OKAY! Assuming it is a new day 
-# Set working directory for eggshell_mockingbird outputs
-cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_mockingbird
+# Set working directory
+cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/all_samples/subset_allsamples
 
 --- Visualize the Denoising Statistics from DADA2 ---
 qiime metadata tabulate \
-  --m-input-file eggshell_cardinal_denoising-stats.qza \
+  --m-input-file denoising-stats.qza \
   --o-visualization eggshell_cardinal_denoising-stats.qzv
 
 --- Generate Feature Table ---
