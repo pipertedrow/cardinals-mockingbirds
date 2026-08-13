@@ -114,44 +114,49 @@ OKAY! Assuming it is a new day
 # Set working directory
 cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/all_samples/subset_allsamples
 
---- Visualize the Denoising Statistics from DADA2 ---
+9) --- Visualize the Denoising Statistics from DADA2 ---
 qiime metadata tabulate \
-  --m-input-file denoising-stats.qza \
-  --o-visualization eggshell_cardinal_denoising-stats.qzv
+  --m-input-file denoising-stats30k.qza \
+  --o-visualization denoising-stats30k.qzv
 
---- Generate Feature Table ---
+10) --- Generate Feature Table ---
 #information on how many sequences are associated with each sample
+# Summary of sequences per sample
 qiime feature-table summarize \
-  --i-table eggshell_mockingbirdASV_table.qza \
-  --m-metadata-file manifest.tsv \
-  --o-summary eggshell_mockingbirdASV_table.qzv \
-  --o-sample-frequencies eggshell_mockingbird_sample-frequencies.qza \
-  --o-feature-frequencies eggshell_mockingbird_feature-frequencies.qza
+  --i-table asv-table30k.qza \
+  --m-metadata-file manifest30k.tsv \
+  --o-summary asv-table30k.qzv \
+  --o-sample-frequencies sample-frequencies30k.qza \
+  --o-feature-frequencies feature-frequencies30k.qza
 
---- Feature Table BLAST option ---
+11) --- Feature Table BLAST option ---
 qiime feature-table tabulate-seqs \
-  --i-data eggshell_mockingbirdASV-seqs.qza \
-  --m-metadata-file eggshell_mockingbird_sample-frequencies.qza \
-  --o-visualization eggshell_mockingbird_sample-frequencies.qzv
+  --i-data asv-seqs30k.qza \
+  --m-metadata-file sample-frequencies30k.qza \
+  --o-visualization asv-seqs30k.qzv
 
---- Filtering for minimum 2 Samples ---
-#this filters out any sequences observed only once 
+12) --- Filtering for minimum 2 Samples ---
+# Filter out features observed in only 1 sample
 qiime feature-table filter-features \
-  --i-table eggshell_mockingbirdASV-table.qza \
+  --i-table asv-table30k.qza \
   --p-min-samples 2 \
+  --o-filtered-table asv-table30k-ms2.qza
 
 qiime feature-table filter-seqs \
-  --i-data eggshell_mockingbirdASV-seqs.qza \
-  --i-table eggshell_mockingbirdASV-table.qza \
-  --o-filtered-data eggshell_mockingbirdASV-seqs-ms2.qza
+  --i-data asv-seqs30k.qza \
+  --i-table asv-table30k-ms2.qza \
+  --o-filtered-data asv-seqs30k-ms2.qza
 
---- Taxanomic Annotation --- 
+13) --- Taxanomic Annotation --- 
 
-#1 Download pre-trimmed V4 references
+# Download pre-trimmed V4 references
 wget https://data.qiime2.org/2024.10/common/silva-138-99-seqs-515-806.qza
 wget https://data.qiime2.org/2024.10/common/silva-138-99-tax.qza
 
-#2 Check QIIME2 resources page classifier list
+# Pre-trained classifier (optional shortcut)
+wget https://data.qiime2.org/classifiers/sklearn-1.4.2/silva/silva-138-99-515-806-nb-classifier.qza
+
+# Check QIIME2 resources page classifier list
 wget https://data.qiime2.org/classifiers/sklearn-1.4.2/silva/silva-138-99-515-806-nb-classifier.qza
 
 #3 Extract V4 region first
@@ -170,46 +175,50 @@ qiime feature-classifier fit-classifier-naive-bayes \
   --i-reference-taxonomy silva-138-99-tax.qza \
   --o-classifier silva138_V4_retrained_2026.4.qza
 
-#5 Classify
+#5 Classify ASVs 
 qiime feature-classifier classify-sklearn \
   --i-classifier silva138_V4_retrained_2026.4.qza \
-  --i-reads eggshell_cardinal_rep-seqs-ms2.qza \
-  --o-classification eggshell_cardinal_taxonomy.qza
+  --i-reads asv-seqs30k-ms2.qza \
+  --o-classification taxonomy30k.qza
 
 #6 Taxa with Sequence Summary
 qiime feature-table tabulate-seqs \
-  --i-data eggshell_cardinal_rep-seqs-ms2.qza \
-  --i-taxonomy eggshell_cardinal_taxonomy.qza \
-  --o-visualization eggshell_cardinal_rep-seqs-ms2.qzv
+  --i-data asv-seqs30k-ms2.qza \
+  --i-taxonomy taxonomy30k.qza \
+  --o-visualization asv-seqs30k-ms2.qzv
 
 We have now visualized the taxanomically classified ASVs. Next it is time for analysis 
 
 --- Downstream Analysis ---
-I’m going to choose values that are around the first quartile of the sample total frequencies (~126000)
+I’m going to choose values that are around the first quartile of the sample total frequencies (~???)
 
 qiime boots kmer-diversity \
-  --i-table eggshell_cardinal_table-ms2.qza \
-  --i-sequences eggshell_cardinal_rep-seqs-ms2.qza \
-  --m-metadata-file manifest.tsv \
-  --p-sampling-depth 96 \  # set sequencing depth from tutorial 
+  --i-table asv-table30k-ms2.qza \
+  --i-sequences asv-seqs30k-ms2.qza \
+  --m-metadata-file manifest30k.tsv \
+  --p-sampling-depth 256 \
   --p-n 10 \
   --p-replacement \
   --p-alpha-average-method median \
   --p-beta-average-method medoid \
-  --output-dir eggshell_cardinal_boots-kmer-diversity
+  --output-dir boots-kmer-diversity30k
+
 
 # Alpha rarefraction
+# use median frequency for max-depth
 qiime diversity alpha-rarefaction \
-  --i-table eggshell_cardinal_table-ms2.qza \
-  --p-max-depth 260 \  # median frequency from tutorial 
-  --m-metadata-file manifest.tsv \
-  --o-visualization eggshell_cardinal_alpha-rarefaction.qzv
+  --i-table asv-table30k-ms2.qza \
+  --p-max-depth 292 \
+  --m-metadata-file manifest30k.tsv \
+  --o-visualization alpha-rarefaction30k.qzv
 
 # Taxa Barplot
 qiime taxa barplot \
-  --i-table eggshell_cardinal_table-ms2.qza \
-  --i-taxonomy eggshell_cardinal_taxonomy.qza \
-  --m-metadata-file manifest.tsv \
-  --o-visualization eggshell_cardinal_taxa-bar-plots.qzv
+  --i-table asv-table30k-ms2.qza \
+  --i-taxonomy taxonomy30k.qza \
+  --m-metadata-file manifest30k.tsv \
+  --o-visualization taxa-bar-plots30k.qzv
 
-Repeat for each group 
+YAY!!!! next is differential abundance analysis 
+
+--- Differential Abundance analysis 
