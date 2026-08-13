@@ -6,7 +6,7 @@ docker run \
 
 cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/01A_sample
 
-mkdir -p test_subset
+mkdir -p 
 
 for r1 in *_R1_*.fastq.gz; do
   r2=$(echo $r1 | sed 's/_R1_/_R2_/')
