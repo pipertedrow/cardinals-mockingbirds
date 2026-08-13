@@ -1,2 +1,176 @@
 Using all samples I will generate a histogram to see average reads per sample. Then I subset the data 30k maybe and run DADA2, 
 taxanomic classifications and downstream analysis
+
+--- Start up ---
+conda deactivate 
+Activate docker container 
+open -a Docker
+ docker run \
+  -v $(pwd):/data \
+  -it quay.io/qiime2/qiime2:2026.4
+cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/all_samples
+
+--- Create Manifest ---
+Create the header first
+echo -e "sample-id\tforward-absolute-filepath\treverse-absolute-filepath" > manifest.tsv
+
+Then automatically add all your samples
+for f in *_R1_001.fastq.gz; do
+    sample="${f/_R1_001.fastq.gz/}"
+    forward="$(pwd)/${f}"
+    reverse="$(pwd)/${f/_R1_001.fastq.gz/_R2_001.fastq.gz}"
+    echo -e "${sample}\t${forward}\t${reverse}" >> manifest.tsv
+done
+
+--- Visualize the Meta Data ---
+qiime metadata tabulate \
+  --m-input-file manifest.tsv \
+  --o-visualization manifest.qzv
+
+--- Demultiplex Data ---
+# basically parses out and organizes files 
+qiime tools import \
+  --type 'SampleData[PairedEndSequencesWithQuality]' \
+  --input-path manifest.tsv \
+  --output-path paired-end-demux.qza \
+  --input-format PairedEndFastqManifestPhred33V2
+
+--- Visualize the Demultiplexed Data --- 
+#after visualizing, determien the truncation lengths for DADA2 with the graphs generated 
+qiime demux summarize \
+  --i-data paired-end-demux.qza \
+  --o-visualization paired-end-demux.qzv
+
+--- Subset Data for DADA2 ---
+#use visual histogram to see minimum number of reads per sample 
+
+
+
+
+
+
+
+
+
+# this step takes up to 48 hours
+qiime dada2 denoise-paired \
+  --i-demultiplexed-seqs /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_mockingbird/nestswab_mockingbird_demux.qza \
+  --p-trim-left-f 0 \
+  --p-trim-left-r 0 \
+  --p-trunc-len-f 220 \
+  --p-trunc-len-r 180 \
+  --p-n-threads 6 \
+  --o-representative-sequences /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_mockingbird/nestswab_mockingbird_rep-seqs.qza \
+  --o-table /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_mockingbird/nestswab_mockingbird_table.qza \
+  --o-denoising-stats /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_mockingbird/nestswab_mockingbird_denoising-stats.qza \
+  --o-base-transition-stats /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/nestswab_mockingbird/nestswab_mockingbird_base-transition-stats.qza \
+  --verbose
+---side bar---
+eggshell cardinal = f240 to r180
+eggshell mockingbird = f260 to r180 
+nest swab cardinal = f260 to r180
+nest swab mockingbird = f220 t0 r180
+----------------
+OKAY! Assuming it is a new day 
+# Set working directory for eggshell_mockingbird outputs
+cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/grouped_samples/eggshell_mockingbird
+
+--- Visualize the Denoising Statistics from DADA2 ---
+qiime metadata tabulate \
+  --m-input-file eggshell_cardinal_denoising-stats.qza \
+  --o-visualization eggshell_cardinal_denoising-stats.qzv
+
+--- Generate Feature Table ---
+#information on how many sequences are associated with each sample
+qiime feature-table summarize \
+  --i-table eggshell_mockingbirdASV_table.qza \
+  --m-metadata-file manifest.tsv \
+  --o-summary eggshell_mockingbirdASV_table.qzv \
+  --o-sample-frequencies eggshell_mockingbird_sample-frequencies.qza \
+  --o-feature-frequencies eggshell_mockingbird_feature-frequencies.qza
+
+--- Feature Table BLAST option ---
+qiime feature-table tabulate-seqs \
+  --i-data eggshell_mockingbirdASV-seqs.qza \
+  --m-metadata-file eggshell_mockingbird_sample-frequencies.qza \
+  --o-visualization eggshell_mockingbird_sample-frequencies.qzv
+
+--- Filtering for minimum 2 Samples ---
+#this filters out any sequences observed only once 
+qiime feature-table filter-features \
+  --i-table eggshell_mockingbirdASV-table.qza \
+  --p-min-samples 2 \
+
+qiime feature-table filter-seqs \
+  --i-data eggshell_mockingbirdASV-seqs.qza \
+  --i-table eggshell_mockingbirdASV-table.qza \
+  --o-filtered-data eggshell_mockingbirdASV-seqs-ms2.qza
+
+--- Taxanomic Annotation --- 
+
+#1 Download pre-trimmed V4 references
+wget https://data.qiime2.org/2024.10/common/silva-138-99-seqs-515-806.qza
+wget https://data.qiime2.org/2024.10/common/silva-138-99-tax.qza
+
+#2 Check QIIME2 resources page classifier list
+wget https://data.qiime2.org/classifiers/sklearn-1.4.2/silva/silva-138-99-515-806-nb-classifier.qza
+
+#3 Extract V4 region first
+#based on 515F/806R primers same as tutorial
+qiime feature-classifier extract-reads \
+  --i-sequences silva-138-99-seqs-515-806.qza \
+  --p-f-primer GTGYCAGCMGCCGCGGTAA \
+  --p-r-primer GGACTACNVGGGTWTCTAAT \
+  --p-min-length 100 \
+  --p-max-length 400 \
+  --o-reads silva138_V4_extracted.qza
+
+#4 Train on smaller extracted reads
+qiime feature-classifier fit-classifier-naive-bayes \
+  --i-reference-reads silva138_V4_extracted.qza \
+  --i-reference-taxonomy silva-138-99-tax.qza \
+  --o-classifier silva138_V4_retrained_2026.4.qza
+
+#5 Classify
+qiime feature-classifier classify-sklearn \
+  --i-classifier silva138_V4_retrained_2026.4.qza \
+  --i-reads eggshell_cardinal_rep-seqs-ms2.qza \
+  --o-classification eggshell_cardinal_taxonomy.qza
+
+#6 Taxa with Sequence Summary
+qiime feature-table tabulate-seqs \
+  --i-data eggshell_cardinal_rep-seqs-ms2.qza \
+  --i-taxonomy eggshell_cardinal_taxonomy.qza \
+  --o-visualization eggshell_cardinal_rep-seqs-ms2.qzv
+
+We have now visualized the taxanomically classified ASVs. Next it is time for analysis 
+
+--- Downstream Analysis ---
+I’m going to choose values that are around the first quartile of the sample total frequencies (~126000)
+
+qiime boots kmer-diversity \
+  --i-table eggshell_cardinal_table-ms2.qza \
+  --i-sequences eggshell_cardinal_rep-seqs-ms2.qza \
+  --m-metadata-file manifest.tsv \
+  --p-sampling-depth 96 \  # set sequencing depth from tutorial 
+  --p-n 10 \
+  --p-replacement \
+  --p-alpha-average-method median \
+  --p-beta-average-method medoid \
+  --output-dir eggshell_cardinal_boots-kmer-diversity
+
+# Alpha rarefraction
+qiime diversity alpha-rarefaction \
+  --i-table eggshell_cardinal_table-ms2.qza \
+  --p-max-depth 260 \  # median frequency from tutorial 
+  --m-metadata-file manifest.tsv \
+  --o-visualization eggshell_cardinal_alpha-rarefaction.qzv
+
+# Taxa Barplot
+qiime taxa barplot \
+  --i-table eggshell_cardinal_table-ms2.qza \
+  --i-taxonomy eggshell_cardinal_taxonomy.qza \
+  --m-metadata-file manifest.tsv \
+  --o-visualization eggshell_cardinal_taxa-bar-plots.qzv
+
+Repeat for each group 
