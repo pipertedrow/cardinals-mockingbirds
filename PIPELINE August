@@ -41,6 +41,8 @@ qiime demux summarize \
   --i-data paired-end-demux.qza \
   --o-visualization paired-end-demux.qzv
 
+### 
+
 6) --- Subset Data with Seqtk ---
 #use visual histogram to see minimum number of reads per sample
 #set seed to same for every file to randomly samples
@@ -48,14 +50,14 @@ qiime demux summarize \
 #to download seqtk function
 apt-get update && apt-get install -y seqtk
 
-mkdir -p subset_allsamples
+mkdir -p subset_pilotsamples
 
 for r1 in *_R1_*.fastq.gz; do
 r2=$(echo $r1 | sed 's/_R1_/_R2_/')
 sample=$(echo $r1 | sed 's/_R1_.*//')
 
-seqtk sample -s100 $r1 30000 | gzip > subset_allsamples/${sample}_R1_30k.fastq.gz
-seqtk sample -s100 $r2 30000 | gzip > subset_allsamples/${sample}_R2_30k.fastq.gz
+seqtk sample -s100 $r1 90000 | gzip > subset_allsamples/${sample}_R1_90k.fastq.gz
+seqtk sample -s100 $r2 90000 | gzip > subset_allsamples/${sample}_R2_90k.fastq.gz
 done
 
 7) --- Working with Subset Data Now ---
