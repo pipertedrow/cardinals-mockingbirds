@@ -95,15 +95,12 @@ qiime feature-table filter-seqs \
 
 --- Generate Phylogenetic Tree --- 
 
-wget -O "sepp-refs-gg-13-8.qza" \
-    "https://data.qiime2.org/2019.10/common/sepp-refs-gg-13-8.qza"
-
-qiime fragment-insertion sepp \
-  --i-representative-sequences asv-seqs90k-ms2.qza \
-  --i-reference-database sepp-refs-gg-13-8.qza \
-  --p-threads 4 \
-  --o-tree insertion-tree90k.qza \
-  --o-placements insertion-placements90k.qza
+qiime phylogeny align-to-tree-mafft-fasttree \
+  --i-sequences asv-seqs90k-ms2.qza \
+  --o-alignment aligned-rep-seqs90k.qza \
+  --o-masked-alignment masked-aligned-rep-seqs90k.qza \
+  --o-tree unrooted-tree90k.qza \
+  --o-rooted-tree rooted-tree90k.qza
 
 --- Taxanomic Annotation ---
 # Download pre-trimmed V4 references
@@ -144,7 +141,108 @@ qiime feature-table tabulate-seqs \
   --i-taxonomy taxonomy90k.qza \
   --o-visualization asv-seqs90k-ms2.qzv
 
+--- Fix Metadata Columns ---
+python - << 'PY'
+import pandas as pd
+import re
+
+inp = "manifest90k.tsv"
+out = "metadata_with_added_cols90k.tsv"
+
+df = pd.read_csv(inp, sep="\t")
+
+blank_pat = re.compile(r"^blank-\d+$")          # blank-1, blank-2, ...
+main_pat  = re.compile(r"^(?P<nest>\d{2})-(?P<stype>ns|nm|e)-(?P<sp>nc|mb)$")
+
+def parse(s):
+    s = str(s)
+    main = s.split("_")[0]  # e.g., "02-e-mb" from "02-e-mb_S8"
+
+    if blank_pat.match(main):
+        # keep the blank id in nest number (or change to "" if you prefer)
+        nest_number = main
+        species = ""
+        sample_type = ""
+    else:
+        m = main_pat.match(main)
+        if m:
+            nest_number = m.group("nest")
+            sample_type = m.group("stype")
+            species = m.group("sp")
+        else:
+            # fallback for unexpected patterns (won't crash)
+            parts = main.split("-")
+            nest_number = parts[0] if len(parts) > 0 else ""
+            sample_type = parts[1] if len(parts) > 1 else ""
+            species = parts[2] if len(parts) > 2 else ""
+
+    return pd.Series([nest_number, species, sample_type])
+
+df[["nest_number","species","sample_type"]] = df["sample-id"].apply(parse)
+
+df = df.rename(columns={
+    "nest_number": "nest number",
+    "sample_type": "sample type"
+})
+
+df.to_csv(out, sep="\t", index=False)
+print(f"Wrote: {out}")
+PY
+
+head -n 5 metadata_with_added_cols90k.tsv
+
+qiime metadata tabulate \
+  --m-input-file metadata_with_added_cols90k.tsv \
+  --o-visualization metadata_with_added_cols90k.qzv
+
+
 --- Downstream Analysis ---
+Step 1) Filtered Feature Table 
+qiime fragment-insertion filter-features \
+  --i-table asv-table90k-ms2.qza \
+  --i-tree rooted-tree90k.qza \
+  --o-filtered-table filtered-table-dada2.qza \
+  --o-removed-table removed-table90k.qza
+
+Step 2) Filtered Data 
+qiime feature-table filter-samples \
+  --i-table filtered-table-dada2.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-where "[sample type] in ('ns','nm')" \
+  --o-filtered-table ns-nm-table90k.qza
+
+Step 3) Visualize Filtered table 
+qiime feature-table summarize \
+  --i-table ns-nm-table90k.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --o-summary ns-nm-table90k.qzv \
+  --o-feature-frequencies ns-nm-feature-freq.qza \
+  --o-sample-frequencies ns-nm-sample-freq.qza
+
+Step 4) Alpha Rarfraction 
+qiime diversity alpha-rarefaction \
+    --i-table ns-nm-table90k.qza \
+    --i-phylogeny rooted-tree90k.qza \
+    --p-max-depth 15000 \
+    --m-metadata-file metadata_with_added_cols90k.tsv \
+    --o-visualization ns-nm-alpha-rarefaction90k.qzv
+
+Step 5) Taxa Barplot 
+qiime taxa barplot \
+  --i-table ns-nm-table90k.qza \
+  --i-taxonomy taxonomy90k.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --o-visualization ns-nm-bar-plots90k.qzv
+
+Step 6) Core Metrics 
+qiime diversity core-metrics-phylogenetic \
+    --i-table child-table-norep.qza \
+    --i-phylogeny insertion-tree.qza \
+    --p-sampling-depth 3400 \
+    --m-metadata-file metadata.tsv \
+    --p-n-jobs 4 \
+    --output-dir child-norep-core-metrics-results
+
 
 # Bootstrap Kmer Diversity 
 qiime boots kmer-diversity \
