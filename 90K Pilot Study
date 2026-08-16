@@ -93,6 +93,18 @@ qiime feature-table filter-seqs \
   --i-table asv-table90k-ms2.qza \
   --o-filtered-data asv-seqs90k-ms2.qza
 
+--- Generate Phylogenetic Tree --- 
+
+wget -O "sepp-refs-gg-13-8.qza" \
+    "https://data.qiime2.org/2019.10/common/sepp-refs-gg-13-8.qza"
+
+qiime fragment-insertion sepp \
+  --i-representative-sequences asv-seqs90k-ms2.qza \
+  --i-reference-database sepp-refs-gg-13-8.qza \
+  --p-threads 4 \
+  --o-tree insertion-tree90k.qza \
+  --o-placements insertion-placements90k.qza
+
 --- Taxanomic Annotation ---
 # Download pre-trimmed V4 references
 wget https://data.qiime2.org/2024.10/common/silva-138-99-seqs-515-806.qza
