@@ -1,0 +1,57 @@
+After reading paired-end-demux.qzv the smallest amount of reads is 95k. So we subset all the data to 90k and then follow the same pipeline 
+
+--- Make New File and Subset Data ---
+mkdir -p subset_pilotsamples
+
+for r1 in *_R1_*.fastq.gz; do
+  r2=$(echo $r1 | sed 's/_R1_/_R2_/')
+  sample=$(echo $r1 | sed 's/_R1_.*//')
+
+  seqtk sample -s100 "$r1" 90000 | gzip > subset_pilotsamples/${sample}_R1_90k.fastq.gz
+  seqtk sample -s100 "$r2" 90000 | gzip > subset_pilotsamples/${sample}_R2_90k.fastq.gz
+done
+
+--- Set Wokring Directory ---
+cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/all_samples/subset_pilotsamples
+
+--- 90K Manifest ---
+echo -e "sample-id\tforward-absolute-filepath\treverse-absolute-filepath" > manifest90k.tsv
+
+for f in *_R1_90k.fastq.gz; do
+  sample="${f/_R1_90k.fastq.gz/}"
+  forward="$(pwd)/${f}"
+  reverse="$(pwd)/${f/_R1_90k.fastq.gz/_R2_90k.fastq.gz}"
+  echo -e "${sample}\t${forward}\t${reverse}" >> manifest90k.tsv
+done
+
+--- Visualize Manifest ---
+qiime metadata tabulate \
+  --m-input-file manifest90k.tsv \
+  --o-visualization manifest90k.qzv
+
+--- 90K Demultiplex Data ---
+qiime tools import \
+  --type 'SampleData[PairedEndSequencesWithQuality]' \
+  --input-path manifest90k.tsv \
+  --output-path paired-end-demux90k.qza \
+  --input-format PairedEndFastqManifestPhred33V2
+
+--- Visualize Demux --- 
+qiime demux summarize \
+  --i-data paired-end-demux90k.qza \
+  --o-visualization paired-end-demux90k.qzv
+
+--- 90k DADA2 ---
+#select forward and reverse truncations first 
+qiime dada2 denoise-paired \
+  --i-demultiplexed-seqs paired-end-demux90k.qza \
+  --p-trim-left-f 0 \
+  --p-trim-left-r 0 \
+  --p-trunc-len-f 240 \
+  --p-trunc-len-r 180 \
+  --p-n-threads 8 \
+  --o-representative-sequences asv-seqs90k.qza \
+  --o-table asv-table90k.qza \
+  --o-denoising-stats denoising-stats90k.qza \
+  --o-base-transition-stats base-transition-stats90k.qza \
+  --verbose
