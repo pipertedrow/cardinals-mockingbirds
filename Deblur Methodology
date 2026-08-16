@@ -1,0 +1,39 @@
+Take 90k Data 
+
+--- Deblur Filter ---
+qiime quality-filter q-score \
+    --i-demux paired-end-demux90k.qza \
+    --o-filtered-sequences demux90k-filtered.qza \
+    --o-filter-stats demux90k-filter-stats.qza
+
+--- Denoise with Deblur ---
+qiime deblur denoise-16S \
+    --i-demultiplexed-seqs demux90k-filtered.qza \
+    --p-trim-length 150 \
+    --p-sample-stats \
+    --p-jobs-to-start 4 \
+    --o-stats deblur-stats.qza \
+    --o-representative-sequences rep-seqs-deblur90k.qza \
+    --o-table table-deblur90k.qza
+
+--- Visulaize Denoising Statisitcs ---
+qiime deblur visualize-stats \
+    --i-deblur-stats deblur-stats.qza \
+    --o-visualization deblur-stats.qzv
+
+--- Visualzie the Feature table --- 
+qiime feature-table summarize \
+    --i-table table-deblur.qza \
+    --m-sample-metadata-file metadata.tsv \
+    --o-visualization table-deblur.qzv
+
+--- Generate Phlyogenetic Tree --- 
+wget -O "sepp-refs-gg-13-8.qza" \
+    "https://data.qiime2.org/2019.10/common/sepp-refs-gg-13-8.qza"
+
+qiime fragment-insertion sepp \
+    --i-representative-sequences rep-seqs-deblur90k.qza \
+    --i-reference-database sepp-refs-gg-13-8.qza \
+    --p-threads 4 \
+    --o-tree insertion-tree90k.qza \
+    --o-placements insertion-placements90k.qza
