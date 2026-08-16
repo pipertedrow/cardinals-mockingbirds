@@ -1,4 +1,4 @@
-After reading paired-end-demux.qzv the smallest amount of reads is 95k. So we subset all the data to 90k and then follow the same pipeline 
+7After reading paired-end-demux.qzv the smallest amount of reads is 95k. So we subset all the data to 90k and then follow the same pipeline 
 
 --- Make New File and Subset Data ---
 mkdir -p subset_pilotsamples
@@ -234,39 +234,131 @@ qiime taxa barplot \
   --m-metadata-file metadata_with_added_cols90k.tsv \
   --o-visualization ns-nm-bar-plots90k.qzv
 
-Step 6) Core Metrics 
+Step 6) Summarize Feature table to determine seq depth 
+qiime feature-table summarize \
+  --i-table ns-nm-table90k.qza \
+  --o-summary ns-nm-table90k-sum.qzv \
+  --o-sample-frequencies ns-nm-sample-freq.qza \
+  --o-feature-frequencies ns-nm-feature-freq.qza
+
+Step 7) Core Metrics 
 qiime diversity core-metrics-phylogenetic \
-    --i-table child-table-norep.qza \
-    --i-phylogeny insertion-tree.qza \
-    --p-sampling-depth 3400 \
-    --m-metadata-file metadata.tsv \
-    --p-n-jobs 4 \
-    --output-dir child-norep-core-metrics-results
+  --i-table ns-nm-table90k.qza \
+  --i-phylogeny rooted-tree90k.qza \
+  --p-sampling-depth 15000 \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-n-jobs-or-threads 4 \
+  --output-dir ns-nm-results
 
+--- Statistical Tests ---
+now using the ns-nm-result folder. we can test different things 
 
-# Bootstrap Kmer Diversity 
-qiime boots kmer-diversity \
-  --i-table asv-table90k-ms2.qza \
-  --i-sequences asv-seqs90k-ms2.qza \
-  --m-metadata-file manifest90k.tsv \
-  --p-sampling-depth 256 \
-  --p-n 10 \
-  --p-replacement \
-  --p-alpha-average-method median \
-  --p-beta-average-method medoid \
-  --output-dir boots-kmer-diversity90k
+qiime diversity alpha-group-significance \
+    --i-alpha-diversity ns-nm-results/shannon_vector.qza \
+    --m-metadata-file metadata_with_added_cols90k.tsv \
+    --o-visualization ns-nm-results/shannon-group-significance.qzv
 
---- Alpha Rarfraction ---
+qiime diversity beta-group-significance \
+  --i-distance-matrix ns-nm-results/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --m-metadata-column "sample type" \
+  --p-pairwise \
+  --o-visualization ns-nm-results/uw_unifrac-sample-type-significance.qzv
+
+--- Second version not filtered tables look at all data together ---
+Step 1) visulaize 
+qiime feature-table summarize \
+  --i-table filtered-table-dada2.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --o-summary all-table90k.qzv \
+  --o-feature-frequencies all-feature-freq.qza \
+  --o-sample-frequencies all-sample-freq.qza
+
+Step 2) Alpha rarfraction 
 qiime diversity alpha-rarefaction \
-  --i-table asv-table90k-ms2.qza \
-  --p-max-depth 292 \
-  --m-metadata-file manifest90k.tsv \
-  --o-visualization alpha-rarefaction90k.qzv
+  --i-table filtered-table-dada2.qza \
+  --i-phylogeny rooted-tree90k.qza \
+  --p-max-depth 15000 \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --o-visualization all-alpha-rarefaction90k.qzv
 
---- Taxa Barplot ---
+Step 3) taxa barplot 
 qiime taxa barplot \
-  --i-table asv-table90k-ms2.qza \
+  --i-table filtered-table-dada2.qza \
   --i-taxonomy taxonomy90k.qza \
-  --m-metadata-file manifest90k.tsv \
-  --o-visualization taxa-bar-plots90k.qzv
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --o-visualization all-bar-plots90k.qzv
 
+Step 4) Summarize feature table to select seq depth 
+qiime feature-table summarize \
+  --i-table filtered-table-dada2.qza \
+  --o-summary all-table90k-sum.qzv \
+  --o-sample-frequencies all-table90k-sample-freq.qza \
+  --o-feature-frequencies all-table90k-feature-freq.qza
+
+Step 5) Core Metrics 
+qiime diversity core-metrics-phylogenetic \
+  --i-table filtered-table-dada2.qza \
+  --i-phylogeny rooted-tree90k.qza \
+  --p-sampling-depth 15000 \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-n-jobs-or-threads 4 \
+  --output-dir all-results
+
+Step 6) Statistical Tests 
+
+--- Alpha --- 
+qiime diversity alpha-group-significance \
+    --i-alpha-diversity all-results/shannon_vector.qza \
+    --m-metadata-file metadata_with_added_cols90k.tsv \
+    --o-visualization all-results/shannon-group-significance.qzv
+
+--- Beta --- 
+qiime diversity beta-group-significance \
+  --i-distance-matrix all-results/bray_curtis_distance_matrix.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --m-metadata-column "species" \
+  --p-pairwise \
+  --o-visualization all-results/bray_curtis_species-significance.qzv
+
+--- PCOA ---
+qiime diversity pcoa \
+  --i-distance-matrix all-results/bray_curtis_distance_matrix.qza \
+  --o-pcoa all-results/bray_curtis_pcoa_results.qza
+
+qiime emperor plot \
+  --i-pcoa all-results/bray_curtis_pcoa_results.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --o-visualization all-results/bray_curtis_emperor_plot.qzv
+
+
+--- Differential Abundance ---
+qiime feature-table filter-samples \
+    --i-table asv-table90k-ms2.qza \
+    --m-metadata-file metadata_with_added_cols90k.tsv \
+    --p-where "[species]='nc'" \
+    --o-filtered-table cardinal.qza
+
+qiime feature-table filter-features \
+    --i-table asv-table90k-ms2.qza \
+    --p-min-samples 5 \
+    --p-min-frequency 20 \
+    --o-filtered-table filtered-ancom.qza
+
+qiime composition add-pseudocount \
+    --i-table filtered-ancom.qza \
+    --o-composition-table comp-ancom.qza
+
+#run ancom 
+qiime composition ancom \
+  --i-table comp-ancom-no-blanks.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --m-metadata-column "species" \
+  --o-visualization ancom-samples.qzv
+
+### extra! to filter out blanks from table 
+qiime feature-table filter-samples \
+  --i-table comp-ancom.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-where "[species] != ''" \
+  --o-filtered-table comp-ancom-no-blanks.qza
