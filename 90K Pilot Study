@@ -195,6 +195,39 @@ qiime metadata tabulate \
   --m-input-file metadata_with_added_cols90k.tsv \
   --o-visualization metadata_with_added_cols90k.qzv
 
+Filter out blanks, chloroplasts and mitochondira before analysis 
+
+We need to remove chloroplasts and mitochondria 
+
+qiime taxa filter-table \
+  --i-table table.qza \
+  --i-taxonomy taxonomy.qza \
+  --p-exclude mitochondria,chloroplast \
+  --o-filtered-table table-no-mitochondria-no-chloroplast.qza
+
+  to remove the actual sequences from the repseq file use this 
+
+  qiime taxa filter-seqs \
+  --i-sequences sequences.qza \
+  --i-taxonomy taxonomy.qza \
+  --p-exclude mitochondria,chloroplast \
+  --o-filtered-sequences sequences-no-mitochondria-no-chloroplast.qza
+
+Filter out over represented sequences from blanks 
+
+qiime feature-table filter-features \
+  --i-table table.qza \
+  --p-exclude-ids \
+  --m-metadata-file sample-metadata.tsv \
+  --p-where "[SampleType]='Blank'" \
+  --o-filtered-table table-no-blanks.qza
+
+  qiime feature-table filter-seqs \
+  --i-data rep-seqs.qza \
+  --m-metadata-file sample-metadata.tsv \
+  --p-exclude-ids \
+  --p-where "[SampleType]='Blank'" \
+  --o-filtered-data rep-seqs-no-blanks.qza
 
 --- Downstream Analysis ---
 Step 1) Filtered Feature Table 
