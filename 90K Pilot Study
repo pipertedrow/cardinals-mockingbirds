@@ -195,46 +195,54 @@ qiime metadata tabulate \
   --m-input-file metadata_with_added_cols90k.tsv \
   --o-visualization metadata_with_added_cols90k.qzv
 
-Filter out blanks, chloroplasts and mitochondira before analysis 
+------------------------------------------------
+---------- Clean up ----------------------------
 
-We need to remove chloroplasts and mitochondria 
-
-qiime taxa filter-table \
-  --i-table table.qza \
-  --i-taxonomy taxonomy.qza \
-  --p-exclude mitochondria,chloroplast \
-  --o-filtered-table table-no-mitochondria-no-chloroplast.qza
-
-  to remove the actual sequences from the repseq file use this 
-
-  qiime taxa filter-seqs \
-  --i-sequences sequences.qza \
-  --i-taxonomy taxonomy.qza \
-  --p-exclude mitochondria,chloroplast \
-  --o-filtered-sequences sequences-no-mitochondria-no-chloroplast.qza
-
-Filter out over represented sequences from blanks 
+table with JUST blanks 
+qiime feature-table filter-samples \
+  --i-table asv-table90k-ms2.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-where "[nest number] in ('blank-1','blank-2','blank-3')" \
+  --o-filtered-table blank-table.qza
 
 qiime feature-table filter-features \
-  --i-table table.qza \
-  --p-exclude-ids \
-  --m-metadata-file sample-metadata.tsv \
-  --p-where "[SampleType]='Blank'" \
-  --o-filtered-table table-no-blanks.qza
+  --i-table blank-table.qza \
+  --p-min-frequency 1 \
+  --o-filtered-table blank-features.qza
 
-  qiime feature-table filter-seqs \
-  --i-data rep-seqs.qza \
-  --m-metadata-file sample-metadata.tsv \
+qiime tools export \
+  --input-path blank-features.qza \
+  --output-path blank-features-exported
+
+biom convert \
+  -i blank-features-exported/feature-table.biom \
+  -o blank-features-exported/feature-table.tsv \
+  --to-tsv
+
+# Extract feature IDs (skip biom header lines)
+tail -n +3 blank-features-exported/feature-table.tsv | cut -f1 > blank-feature-ids.tsv
+
+# Add header required by QIIME2 metadata format
+sed -i '1i #OTU ID' blank-feature-ids.tsv
+
+qiime feature-table filter-features \
+  --i-table asv-table90k-ms2.qza \
+  --m-metadata-file blank-feature-ids.tsv \
   --p-exclude-ids \
-  --p-where "[SampleType]='Blank'" \
-  --o-filtered-data rep-seqs-no-blanks.qza
+  --o-filtered-table table-no-blank-features90k.qza
+
+qiime taxa filter-table \
+  --i-table table-no-blank-features90k.qza \
+  --i-taxonomy taxonomy90k.qza \
+  --p-exclude mitochondria,chloroplast \
+  --o-filtered-table table-no-blank-no-mito-chloro90k.qza
 
 --- Downstream Analysis ---
 Step 1) Filtered Feature Table 
 qiime fragment-insertion filter-features \
-  --i-table asv-table90k-ms2.qza \
+  --i-table table-no-blank-no-mito-chloro90k.qza \
   --i-tree rooted-tree90k.qza \
-  --o-filtered-table filtered-table-dada2.qza \
+  --o-filtered-table full-filter-table90k.qza \
   --o-removed-table removed-table90k.qza
 
 Step 2) Filtered Data 
@@ -246,11 +254,11 @@ qiime feature-table filter-samples \
 
 Step 3) Visualize Filtered table 
 qiime feature-table summarize \
-  --i-table ns-nm-table90k.qza \
+  --i-table full-filter-table90k.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
-  --o-summary ns-nm-table90k.qzv \
-  --o-feature-frequencies ns-nm-feature-freq.qza \
-  --o-sample-frequencies ns-nm-sample-freq.qza
+  --o-summary full-filter-table90k.qzv \
+  --o-feature-frequencies fully-filter-freq.qza \
+  --o-sample-frequencies fully-filter-freq.qza
 
 Step 4) Alpha Rarfraction 
 qiime diversity alpha-rarefaction \
@@ -262,26 +270,26 @@ qiime diversity alpha-rarefaction \
 
 Step 5) Taxa Barplot 
 qiime taxa barplot \
-  --i-table ns-nm-table90k.qza \
+  --i-table full-filter-table90k.qza \
   --i-taxonomy taxonomy90k.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
-  --o-visualization ns-nm-bar-plots90k.qzv
+  --o-visualization full-filter-barplot90k.qzv
 
 Step 6) Summarize Feature table to determine seq depth 
 qiime feature-table summarize \
-  --i-table ns-nm-table90k.qza \
-  --o-summary ns-nm-table90k-sum.qzv \
+  --i-table full-filter-table90k.qza \
+  --o-summary full-filter-sum.qzv \
   --o-sample-frequencies ns-nm-sample-freq.qza \
   --o-feature-frequencies ns-nm-feature-freq.qza
 
 Step 7) Core Metrics 
 qiime diversity core-metrics-phylogenetic \
-  --i-table ns-nm-table90k.qza \
+  --i-table full-filter-table90k.qza \
   --i-phylogeny rooted-tree90k.qza \
   --p-sampling-depth 15000 \
   --m-metadata-file metadata_with_added_cols90k.tsv \
   --p-n-jobs-or-threads 4 \
-  --output-dir ns-nm-results
+  --output-dir filtered-all-results
 
 --- Statistical Tests ---
 now using the ns-nm-result folder. we can test different things 
@@ -301,7 +309,7 @@ qiime diversity beta-group-significance \
 --- Second version not filtered tables look at all data together ---
 Step 1) visulaize 
 qiime feature-table summarize \
-  --i-table filtered-table-dada2.qza \
+  --i-table full-filter-table90k.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
   --o-summary all-table90k.qzv \
   --o-feature-frequencies all-feature-freq.qza \
@@ -348,11 +356,11 @@ qiime diversity alpha-group-significance \
 
 --- Beta --- 
 qiime diversity beta-group-significance \
-  --i-distance-matrix all-results/bray_curtis_distance_matrix.qza \
+  --i-distance-matrix filtered-all-results/bray_curtis_distance_matrix.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
-  --m-metadata-column "species" \
+  --m-metadata-column "sample type" \
   --p-pairwise \
-  --o-visualization all-results/bray_curtis_species-significance.qzv
+  --o-visualization filtered-all-results/bray_curtis_sample-significance.qzv
 
 --- PCOA ---
 qiime diversity pcoa \
