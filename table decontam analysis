@@ -24,6 +24,26 @@ qiime diversity beta-group-significance \
   --p-pairwise \
   --o-visualization decontam-all-results/bray_curtis_sampletype-significance.qzv
 
+--- Filter Table for comparisons ---
+qiime feature-table filter-samples \
+  --i-table .comp-table-C6-no-blanksqza \
+  --m-metadata-file metadata_no_blanks.tsv \
+  --p-where "[sample type] in ('ns','nm')" \
+  --o-filtered-table ns-nm-table90k.qza
+
+qiime feature-table filter-samples \
+  --i-table .comp-table-C6-no-blanksqza \
+  --m-metadata-file metadata_no_blanks.tsv \
+  --p-where "[species] in ('nc')" \
+  --o-filtered-table cardinal-table90k.qza
+
+qiime feature-table filter-samples \
+  --i-table .comp-table-C6-no-blanksqza \
+  --m-metadata-file metadata_no_blanks.tsv \
+  --p-where "[species] in ('mb')" \
+  --o-filtered-table mockingbird-table90k.qza
+
+
 
 --- Differential Abundance ---
 
