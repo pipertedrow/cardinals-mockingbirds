@@ -8,19 +8,22 @@ qiime diversity core-metrics-phylogenetic \
   --output-dir decontam-all-results
 
 --- Statistical Tests ---
-now using the ns-nm-result folder. we can test different things 
+now using the result folder. we can test different things 
 
+Generate shannon diversity sigificance 
 qiime diversity alpha-group-significance \
     --i-alpha-diversity decontam-all-results/shannon_vector.qza \
     --m-metadata-file metadata_with_added_cols90k.tsv \
     --o-visualization decontam-all-results/shannon-group-significance.qzv
 
+Generate beta diverrsity significance
 qiime diversity beta-group-significance \
   --i-distance-matrix decontam-all-results/bray_curtis_distance_matrix.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
   --m-metadata-column "sample type" \
   --p-pairwise \
   --o-visualization decontam-all-results/bray_curtis_sampletype-significance.qzv
+
 
 --- Differential Abundance ---
 
