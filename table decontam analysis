@@ -1,0 +1,129 @@
+Step 7) Core Metrics 
+qiime diversity core-metrics-phylogenetic \
+  --i-table full-filter-table90k.qza \
+  --i-phylogeny rooted-tree90k.qza \
+  --p-sampling-depth 15000 \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-n-jobs-or-threads 4 \
+  --output-dir filtered-all-results
+
+--- Statistical Tests ---
+now using the ns-nm-result folder. we can test different things 
+
+qiime diversity alpha-group-significance \
+    --i-alpha-diversity ns-nm-results/shannon_vector.qza \
+    --m-metadata-file metadata_with_added_cols90k.tsv \
+    --o-visualization ns-nm-results/shannon-group-significance.qzv
+
+qiime diversity beta-group-significance \
+  --i-distance-matrix ns-nm-results/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --m-metadata-column "sample type" \
+  --p-pairwise \
+  --o-visualization ns-nm-results/uw_unifrac-sample-type-significance.qzv
+
+--- Second version not filtered tables look at all data together ---
+Step 1) visulaize 
+qiime feature-table summarize \
+  --i-table full-filter-table90k.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --o-summary all-table90k.qzv \
+  --o-feature-frequencies all-feature-freq.qza \
+  --o-sample-frequencies all-sample-freq.qza
+
+Step 2) Alpha rarfraction 
+qiime diversity alpha-rarefaction \
+  --i-table filtered-table-dada2.qza \
+  --i-phylogeny rooted-tree90k.qza \
+  --p-max-depth 15000 \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --o-visualization all-alpha-rarefaction90k.qzv
+
+Step 3) taxa barplot 
+qiime taxa barplot \
+  --i-table filtered-table-dada2.qza \
+  --i-taxonomy taxonomy90k.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --o-visualization all-bar-plots90k.qzv
+
+Step 4) Summarize feature table to select seq depth 
+qiime feature-table summarize \
+  --i-table filtered-table-dada2.qza \
+  --o-summary all-table90k-sum.qzv \
+  --o-sample-frequencies all-table90k-sample-freq.qza \
+  --o-feature-frequencies all-table90k-feature-freq.qza
+
+Step 5) Core Metrics 
+qiime diversity core-metrics-phylogenetic \
+  --i-table filtered-table-dada2.qza \
+  --i-phylogeny rooted-tree90k.qza \
+  --p-sampling-depth 15000 \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-n-jobs-or-threads 4 \
+  --output-dir all-results
+
+Step 6) Statistical Tests 
+
+--- Alpha --- 
+qiime diversity alpha-group-significance \
+    --i-alpha-diversity all-results/shannon_vector.qza \
+    --m-metadata-file metadata_with_added_cols90k.tsv \
+    --o-visualization all-results/shannon-group-significance.qzv
+
+--- Beta --- 
+qiime diversity beta-group-significance \
+  --i-distance-matrix filtered-all-results/bray_curtis_distance_matrix.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --m-metadata-column "sample type" \
+  --p-pairwise \
+  --o-visualization filtered-all-results/bray_curtis_sample-significance.qzv
+
+--- PCOA ---
+qiime diversity pcoa \
+  --i-distance-matrix all-results/bray_curtis_distance_matrix.qza \
+  --o-pcoa all-results/bray_curtis_pcoa_results.qza
+
+qiime emperor plot \
+  --i-pcoa all-results/bray_curtis_pcoa_results.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --o-visualization all-results/bray_curtis_emperor_plot.qzv
+
+
+--- Differential Abundance ---
+qiime feature-table filter-samples \
+    --i-table asv-table90k-ms2.qza \
+    --m-metadata-file metadata_with_added_cols90k.tsv \
+    --p-where "[species]='nc'" \
+    --o-filtered-table cardinal.qza
+
+qiime feature-table filter-features \
+    --i-table asv-table90k-ms2.qza \
+    --p-min-samples 5 \
+    --p-min-frequency 20 \
+    --o-filtered-table filtered-ancom.qza
+
+qiime composition add-pseudocount \
+    --i-table filtered-ancom.qza \
+    --o-composition-table comp-ancom.qza
+
+#run ancom 
+qiime composition ancom \
+  --i-table comp-ancom-no-blanks.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --m-metadata-column "species" \
+  --o-visualization ancom-samples.qzv
+
+### extra! to filter out blanks from table 
+qiime feature-table filter-samples \
+  --i-table comp-ancom.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-where "[species] != ''" \
+  --o-filtered-table comp-ancom-no-blanks.qza
+
+
+qiime feature-table filter-features \
+  --i-table asv-table90k.qza \
+  --m-metadata-file blank-features.qza \
+  --p-exclude-ids \
+  --o-filtered-table table-decontaminated.qza
+
