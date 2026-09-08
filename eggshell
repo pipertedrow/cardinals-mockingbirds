@@ -1,9 +1,80 @@
+Create Eggshell Table 
+qiime feature-table filter-samples \
+  --i-table comp-table-C6-no-blanks.qza \
+  --m-metadata-file metadata_no_blanks.tsv \
+  --p-where "[sample type] in ('e')" \
+  --o-filtered-table eggshell-table90k.qza
 
-
+Run Core Metrics for Eggshell 
 qiime diversity core-metrics-phylogenetic \
-  --i-table table-decontam90k.qza \
+  --i-table eggshell-table90k.qza \
   --i-phylogeny rooted-tree90k.qza \
   --p-sampling-depth 15000 \
-  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --m-metadata-file metadata_no_blanks.tsv \
   --p-n-jobs-or-threads 4 \
-  --output-dir decontam-all-results
+  --output-dir eggshell-results
+
+Now using the result folder. we can test different things 
+
+Generate shannon diversity sigificance 
+qiime diversity alpha-group-significance \
+    --i-alpha-diversity decontam-all-results/shannon_vector.qza \
+    --m-metadata-file metadata_with_added_cols90k.tsv \
+    --o-visualization decontam-all-results/shannon-group-significance.qzv
+
+Generate beta diverrsity significance
+qiime diversity beta-group-significance \
+  --i-distance-matrix decontam-all-results/bray_curtis_distance_matrix.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --m-metadata-column "sample type" \
+  --p-pairwise \
+  --o-visualization decontam-all-results/bray_curtis_sampletype-significance.qzv
+
+
+qiime feature-table filter-samples \
+  --i-table comp-table-C6-no-blanksqza \
+  --m-metadata-file metadata_no_blanks.tsv \
+  --p-where "[species] in ('nc')" \
+  --o-filtered-table cardinal-table90k.qza
+
+qiime feature-table filter-samples \
+  --i-table .comp-table-C6-no-blanksqza \
+  --m-metadata-file metadata_no_blanks.tsv \
+  --p-where "[species] in ('mb')" \
+  --o-filtered-table mockingbird-table90k.qza
+
+
+--- Differential Abundance ---
+
+qiime feature-table filter-features \
+    --i-table eggshell-table90k.qza \
+    --p-min-samples 5 \
+    --p-min-frequency 20 \
+    --o-filtered-table filtered-eggshell-table90k.qza
+
+qiime composition add-pseudocount \
+    --i-table filtered-decontam90k.qza \
+    --o-composition-table comp-table-C6.qza
+
+qiime feature-table filter-samples \
+  --i-table comp-table-C6.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-exclude-ids "blank-1_S59,blank-2_S60,blank-3_S61" \
+  --o-filtered-table comp-table-C6-no-blanks.qza
+
+qiime composition ancom \
+    --i-table comp-table-C6-no-b.qza \
+    --m-metadata-file metadata_no_blanks.tsv \
+    --m-metadata-column species \
+    --o-visualization ancom-C6-delivery.qzv
+SONGBIRD
+
+qiime songbird multinomial \
+    --i-table comp-table-C6-no-blanks.qza \
+    --m-metadata-file metadata-no-blanks.tsv \
+    --p-formula "species+sample type" \
+    --p-epochs 10000 \
+    --p-differential-prior 0.5 \
+    --o-differentials songbird-results/differentials.qza \
+    --o-regression-stats songbird-results/regression-stats.qza \
+    --o-regression-biplot songbird-results/regression-biplot.qza
