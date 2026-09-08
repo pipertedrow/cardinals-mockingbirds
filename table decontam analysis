@@ -26,13 +26,19 @@ qiime diversity beta-group-significance \
 
 --- Filter Table for comparisons ---
 qiime feature-table filter-samples \
-  --i-table .comp-table-C6-no-blanksqza \
+  --i-table comp-table-C6-no-blanks.qza \
   --m-metadata-file metadata_no_blanks.tsv \
   --p-where "[sample type] in ('ns','nm')" \
   --o-filtered-table ns-nm-table90k.qza
 
 qiime feature-table filter-samples \
-  --i-table .comp-table-C6-no-blanksqza \
+  --i-table comp-table-C6-no-blanks.qza \
+  --m-metadata-file metadata_no_blanks.tsv \
+  --p-where "[sample type] in ('e')" \
+  --o-filtered-table eggshell-table90k.qza
+
+qiime feature-table filter-samples \
+  --i-table comp-table-C6-no-blanksqza \
   --m-metadata-file metadata_no_blanks.tsv \
   --p-where "[species] in ('nc')" \
   --o-filtered-table cardinal-table90k.qza
@@ -44,14 +50,13 @@ qiime feature-table filter-samples \
   --o-filtered-table mockingbird-table90k.qza
 
 
-
 --- Differential Abundance ---
 
 qiime feature-table filter-features \
-    --i-table table-decontam90k.qza \
+    --i-table eggshell-table90k.qza \
     --p-min-samples 5 \
     --p-min-frequency 20 \
-    --o-filtered-table filtered-decontam90k.qza
+    --o-filtered-table filtered-eggshell-table90k.qza
 
 qiime composition add-pseudocount \
     --i-table filtered-decontam90k.qza \
