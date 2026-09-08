@@ -240,9 +240,9 @@ qiime taxa filter-table \
 --- Downstream Analysis ---
 Step 1) Filtered Feature Table 
 qiime fragment-insertion filter-features \
-  --i-table table-no-blank-no-mito-chloro90k.qza \
+  --i-table table-decontaminated.qza \
   --i-tree rooted-tree90k.qza \
-  --o-filtered-table full-filter-table90k.qza \
+  --o-filtered-table table-decontam90k.qza \
   --o-removed-table removed-table90k.qza
 
 Step 2) Filtered Data 
@@ -254,26 +254,26 @@ qiime feature-table filter-samples \
 
 Step 3) Visualize Filtered table 
 qiime feature-table summarize \
-  --i-table full-filter-table90k.qza \
+  --i-table table-decontam90k.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
-  --o-summary full-filter-table90k.qzv \
-  --o-feature-frequencies fully-filter-freq.qza \
-  --o-sample-frequencies fully-filter-freq.qza
+  --o-summary table-decontam90k.qzv \
+  --o-feature-frequencies decontam-freq.qza \
+  --o-sample-frequencies decontam-freq.qza
 
 Step 4) Alpha Rarfraction 
 qiime diversity alpha-rarefaction \
-    --i-table ns-nm-table90k.qza \
+    --i-table table-decontam90k.qza \
     --i-phylogeny rooted-tree90k.qza \
     --p-max-depth 15000 \
     --m-metadata-file metadata_with_added_cols90k.tsv \
-    --o-visualization ns-nm-alpha-rarefaction90k.qzv
+    --o-visualization decontam-alpha-rarefaction90k.qzv
 
 Step 5) Taxa Barplot 
 qiime taxa barplot \
-  --i-table full-filter-table90k.qza \
+  --i-table table-decontam90k.qza \
   --i-taxonomy taxonomy90k.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
-  --o-visualization full-filter-barplot90k.qzv
+  --o-visualization dectontam-barplot90k.qzv
 
 Step 6) Summarize Feature table to determine seq depth 
 qiime feature-table summarize \
@@ -403,3 +403,11 @@ qiime feature-table filter-samples \
   --m-metadata-file metadata_with_added_cols90k.tsv \
   --p-where "[species] != ''" \
   --o-filtered-table comp-ancom-no-blanks.qza
+
+
+qiime feature-table filter-features \
+  --i-table asv-table90k.qza \
+  --m-metadata-file blank-features.qza \
+  --p-exclude-ids \
+  --o-filtered-table table-decontaminated.qza
+
