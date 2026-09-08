@@ -1,95 +1,62 @@
 Step 7) Core Metrics 
 qiime diversity core-metrics-phylogenetic \
-  --i-table full-filter-table90k.qza \
+  --i-table table-decontam90k.qza \
   --i-phylogeny rooted-tree90k.qza \
   --p-sampling-depth 15000 \
   --m-metadata-file metadata_with_added_cols90k.tsv \
   --p-n-jobs-or-threads 4 \
-  --output-dir filtered-all-results
+  --output-dir decontam-all-results
 
 --- Statistical Tests ---
 now using the ns-nm-result folder. we can test different things 
 
 qiime diversity alpha-group-significance \
-    --i-alpha-diversity ns-nm-results/shannon_vector.qza \
+    --i-alpha-diversity decontam-all-results/shannon_vector.qza \
     --m-metadata-file metadata_with_added_cols90k.tsv \
-    --o-visualization ns-nm-results/shannon-group-significance.qzv
+    --o-visualization decontam-all-results/shannon-group-significance.qzv
 
 qiime diversity beta-group-significance \
-  --i-distance-matrix ns-nm-results/unweighted_unifrac_distance_matrix.qza \
+  --i-distance-matrix decontam-all-results/bray_curtis_distance_matrix.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
   --m-metadata-column "sample type" \
   --p-pairwise \
-  --o-visualization ns-nm-results/uw_unifrac-sample-type-significance.qzv
-
---- Second version not filtered tables look at all data together ---
-Step 1) visulaize 
-qiime feature-table summarize \
-  --i-table full-filter-table90k.qza \
-  --m-metadata-file metadata_with_added_cols90k.tsv \
-  --o-summary all-table90k.qzv \
-  --o-feature-frequencies all-feature-freq.qza \
-  --o-sample-frequencies all-sample-freq.qza
-
-Step 2) Alpha rarfraction 
-qiime diversity alpha-rarefaction \
-  --i-table filtered-table-dada2.qza \
-  --i-phylogeny rooted-tree90k.qza \
-  --p-max-depth 15000 \
-  --m-metadata-file metadata_with_added_cols90k.tsv \
-  --o-visualization all-alpha-rarefaction90k.qzv
-
-Step 3) taxa barplot 
-qiime taxa barplot \
-  --i-table filtered-table-dada2.qza \
-  --i-taxonomy taxonomy90k.qza \
-  --m-metadata-file metadata_with_added_cols90k.tsv \
-  --o-visualization all-bar-plots90k.qzv
-
-Step 4) Summarize feature table to select seq depth 
-qiime feature-table summarize \
-  --i-table filtered-table-dada2.qza \
-  --o-summary all-table90k-sum.qzv \
-  --o-sample-frequencies all-table90k-sample-freq.qza \
-  --o-feature-frequencies all-table90k-feature-freq.qza
-
-Step 5) Core Metrics 
-qiime diversity core-metrics-phylogenetic \
-  --i-table filtered-table-dada2.qza \
-  --i-phylogeny rooted-tree90k.qza \
-  --p-sampling-depth 15000 \
-  --m-metadata-file metadata_with_added_cols90k.tsv \
-  --p-n-jobs-or-threads 4 \
-  --output-dir all-results
-
-Step 6) Statistical Tests 
-
---- Alpha --- 
-qiime diversity alpha-group-significance \
-    --i-alpha-diversity all-results/shannon_vector.qza \
-    --m-metadata-file metadata_with_added_cols90k.tsv \
-    --o-visualization all-results/shannon-group-significance.qzv
-
---- Beta --- 
-qiime diversity beta-group-significance \
-  --i-distance-matrix filtered-all-results/bray_curtis_distance_matrix.qza \
-  --m-metadata-file metadata_with_added_cols90k.tsv \
-  --m-metadata-column "sample type" \
-  --p-pairwise \
-  --o-visualization filtered-all-results/bray_curtis_sample-significance.qzv
-
---- PCOA ---
-qiime diversity pcoa \
-  --i-distance-matrix all-results/bray_curtis_distance_matrix.qza \
-  --o-pcoa all-results/bray_curtis_pcoa_results.qza
-
-qiime emperor plot \
-  --i-pcoa all-results/bray_curtis_pcoa_results.qza \
-  --m-metadata-file metadata_with_added_cols90k.tsv \
-  --o-visualization all-results/bray_curtis_emperor_plot.qzv
-
+  --o-visualization decontam-all-results/bray_curtis_sampletype-significance.qzv
 
 --- Differential Abundance ---
+
+qiime feature-table filter-features \
+    --i-table table-decontam90k.qza \
+    --p-min-samples 5 \
+    --p-min-frequency 20 \
+    --o-filtered-table filtered-decontam90k.qza
+
+qiime composition add-pseudocount \
+    --i-table filtered-decontam90k.qza \
+    --o-composition-table comp-table-C6.qza
+
+qiime feature-table filter-samples \
+  --i-table comp-table-C6.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-exclude-ids "blank-1_S59,blank-2_S60,blank-3_S61" \
+  --o-filtered-table comp-table-C6-no-blanks.qza
+
+qiime composition ancom \
+    --i-table comp-table-C6-no-b.qza \
+    --m-metadata-file metadata_no_blanks.tsv \
+    --m-metadata-column species \
+    --o-visualization ancom-C6-delivery.qzv
+SONGBIRD
+
+qiime songbird multinomial \
+    --i-table comp-table-C6-no-blanks.qza \
+    --m-metadata-file metadata-no-blanks.tsv \
+    --p-formula "species+sample type" \
+    --p-epochs 10000 \
+    --p-differential-prior 0.5 \
+    --o-differentials songbird-results/differentials.qza \
+    --o-regression-stats songbird-results/regression-stats.qza \
+    --o-regression-biplot songbird-results/regression-biplot.qza
+
 qiime feature-table filter-samples \
     --i-table asv-table90k-ms2.qza \
     --m-metadata-file metadata_with_added_cols90k.tsv \
