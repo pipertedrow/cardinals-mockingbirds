@@ -1,0 +1,9 @@
+
+
+qiime diversity core-metrics-phylogenetic \
+  --i-table table-decontam90k.qza \
+  --i-phylogeny rooted-tree90k.qza \
+  --p-sampling-depth 15000 \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-n-jobs-or-threads 4 \
+  --output-dir decontam-all-results
