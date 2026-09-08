@@ -48,3 +48,15 @@ qiime composition ancom \
     --m-metadata-column species \
     --o-visualization ancom-eggshell-by-species.qzv
 
+qiime composition ancom \
+    --i-table filtered-eggshell-table90k.qza \
+    --m-metadata-file metadata_with_added_cols90k.tsv \
+    --m-metadata-column "nest number" \
+    --o-visualization ancom-eggshell-by-nestnumber.qzv
+
+qiime composition ancombc2 \
+  --i-table filtered-eggshell-table90k.qza \
+    --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-fixed-effects-formula species \
+  --p-reference-levels 'species::nc,nm' \
+  --o-ancombc2-output ancombc2-results.qza
