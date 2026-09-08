@@ -1,0 +1,46 @@
+Create Nest Sampling Type Table 
+qiime feature-table filter-samples \
+  --i-table table-decontam90k.qza  \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-where "[sample type] in ('ns','nm')" \
+  --o-filtered-table nest-table90k.qza
+
+# --- Run Core Metrics for Nest ---
+qiime diversity core-metrics-phylogenetic \
+  --i-table nest-table90k.qza \
+  --i-phylogeny rooted-tree90k.qza \
+  --p-sampling-depth 15000 \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-n-jobs-or-threads 4 \
+  --output-dir nest-results
+
+# --- Using the result folder: Alpha diversity significance ---
+qiime diversity alpha-group-significance \
+  --i-alpha-diversity nest-results/shannon_vector.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --o-visualization nest-results/shannon-group-significance.qzv
+
+# --- Using the result folder: Beta diversity significance ---
+qiime diversity beta-group-significance \
+  --i-distance-matrix nest-results/bray_curtis_distance_matrix.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --m-metadata-column "species" \
+  --p-pairwise \
+  --o-visualization nest-results/bray_curtis_species-significance.qzv
+
+# --- Differential Abundance (ANCOM) ---
+qiime feature-table filter-features \
+  --i-table nest-table90k.qza \
+  --p-min-samples 5 \
+  --p-min-frequency 20 \
+  --o-filtered-table filtered-nest-table90k.qza
+
+qiime composition add-pseudocount \
+  --i-table filtered-nest-table90k.qza \
+  --o-composition-table filtered-nest-table90k.qza
+
+qiime composition ancom \
+  --i-table filtered-nest-table90k.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --m-metadata-column species \
+  --o-visualization nest-results/ancom-nest-by-species.qzv
