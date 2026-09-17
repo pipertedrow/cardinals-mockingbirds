@@ -141,6 +141,10 @@ qiime feature-table tabulate-seqs \
   --i-taxonomy taxonomy90k.qza \
   --o-visualization asv-seqs90k-ms2.qzv
 
+qiime metadata tabulate \
+  --m-input-file taxonomy90k-vsearch.qza \
+  --o-visualization vsearch-hits.qzv
+
 --- Fix Metadata Columns ---
 python - << 'PY'
 import pandas as pd
