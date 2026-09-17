@@ -1,5 +1,14 @@
 After reading paired-end-demux.qzv the smallest amount of reads is 95k. So we subset all the data to 90k and then follow the same pipeline 
 
+1) --- Start up ---
+conda deactivate 
+Activate docker container 
+open -a Docker
+ docker run \
+  -v $(pwd):/data \
+  -it quay.io/qiime2/qiime2:2026.4
+cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/all_samples
+
 --- Make New File and Subset Data ---
 mkdir -p subset_pilotsamples
 
@@ -270,12 +279,51 @@ qiime composition ancombc2 \
   --i-table table-FINAL-no-blanks90k.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
   --p-fixed-effects-formula "sample type" \
-  --p-reference-levels "sample-type::ns" \
+  --p-reference-levels "sample type::ns" \
   --o-ancombc2-output FINAL-results/ancombc2-results90k.qza
 
 ### Generate differential abundance barplot
-qiime composition da-barplot \
+qiime composition ancombc2-visualizer \
   --i-data FINAL-results/ancombc2-results90k.qza \
   --i-taxonomy taxonomy90k-vsearch.qza \
-  --p-significance-threshold 0.05 \
   --o-visualization FINAL-results/ancombc2-barplot90k.qzv
+
+--- Differential Abundance ---
+qiime feature-table filter-samples \
+    --i-table table-FINAL-no-blanks90k.qza  \
+    --m-metadata-file metadata_with_added_cols90k.tsv \
+    --p-where "[species]='nc'" \
+    --o-filtered-table FINAL-results/cardinal.qza
+
+qiime feature-table filter-features \
+    --i-table FINAL-results/cardinal.qza \
+    --p-min-samples 5 \
+    --p-min-frequency 20 \
+    --o-filtered-table FINAL-results/cardinal-ancom.qza
+
+qiime composition add-pseudocount \
+    --i-table FINAL-results/nest-swab-ancom.qza \
+    --o-composition-table FINAL-results/comp-cardinal-ancom.qza
+
+#run ancom 
+qiime composition ancom \
+  --i-table FINAL-results/comp-cardinal-ancom.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --m-metadata-column "species" \
+  --o-visualization FINAL-results/nest-cardinal-vis.qzv
+
+---- OPTION 2 ----- I like it more it is prettier 
+qiime composition ancombc2 \
+  --i-table table-FINAL-no-blanks90k.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-fixed-effects-formula "species" \
+  --p-reference-levels "species::mb" \
+  --o-ancombc2-output FINAL-results/ancombc2-species-results90k.qza
+
+### Generate differential abundance barplot
+qiime composition ancombc2-visualizer \
+  --i-data FINAL-results/ancombc2-species-results90k.qza \
+  --i-taxonomy taxonomy90k-vsearch.qza \
+  --o-visualization FINAL-results/ancombc2-species-barplot90k.qzv
+
+
