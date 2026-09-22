@@ -81,10 +81,59 @@ qiime composition add-pseudocount \
     --i-table filtered-ancom.qza \
     --o-composition-table comp-ancom.qza
 
-#run ancom 
-qiime composition ancom \
-  --i-table comp-ancom-no-blanks.qza \
+---- OPTION 2 ----- I like it more it is prettier 
+qiime composition ancombc2 \
+  --i-table table-FINAL-no-blanks90k.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
-  --m-metadata-column "species" \
-  --o-visualization ancom-samples.qzv
+  --p-fixed-effects-formula "species" \
+  --p-reference-levels "species::mb" \
+  --o-ancombc2-output FINAL-results/ancombc2-species-results90k.qza
+
+### Generate differential abundance barplot
+qiime composition ancombc2-visualizer \
+  --i-data FINAL-results/ancombc2-species-results90k.qza \
+  --i-taxonomy taxonomy90k-vsearch.qza \
+  --o-visualization FINAL-results/ancombc2-species-barplot90k.qzv
+
+
+# -------------------- Differential Abundance --------------------
+
+## 1) Filter samples by species = nc
+qiime feature-table filter-samples \
+  --i-table EGGSHELL/eggshell-table90k.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-where "[species]='nc'" \
+  --o-filtered-table EGGSHELL/egg_cardinal.qza
+
+
+## 2) Filter features (your original thresholds kept)
+qiime feature-table filter-features \
+  --i-table egg_cardinal.qza \
+  --p-min-samples 5 \
+  --p-min-frequency 20 \
+  --o-filtered-table EGGSHELL/filtered-ancom.qza
+
+
+## 3) Add pseudocount
+qiime composition add-pseudocount \
+  --i-table EGGSHELL/filtered-ancom.qza \
+  --o-composition-table EGGSHELL/comp-ancom.qza
+
+
+# ---- OPTION 2 (prettier) ----
+
+## 4) Run ANCOM-BC2
+qiime composition ancombc2 \
+  --i-table table-FINAL-no-blanks90k.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-fixed-effects-formula "species" \
+  --p-reference-levels "species::mb" \
+  --o-ancombc2-output EGGSHELL/ancombc2-species-results90k.qza
+
+
+## 5) Generate visualization
+qiime composition ancombc2-visualizer \
+  --i-data EGGSHELL/ancombc2-species-results90k.qza \
+  --i-taxonomy taxonomy90k-vsearch.qza \
+  --o-visualization EGGSHELL/ancombc2-species-barplot90k.qzv
 
