@@ -1,46 +1,70 @@
-Create Nest Sampling Type Table 
-qiime feature-table filter-samples \
-  --i-table table-decontam90k.qza  \
-  --m-metadata-file metadata_with_added_cols90k.tsv \
-  --p-where "[sample type] in ('ns','nm')" \
-  --o-filtered-table nest-table90k.qza
+--- Downstream Analysis ---
+create new folder for filtered table and data 
+mkdir -p /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/all_samples/subset_pilotsamples/MATERIAL
 
-# --- Run Core Metrics for Nest ---
+cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/all_samples/subset_pilotsamples
+
+
+qiime feature-table filter-samples \
+  --i-table table-FINAL-no-blanks90k.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-where "[sample type] in ('nm')" \
+  --o-filtered-table MATERIAL/material-table90k.qza
+
+qiime feature-table summarize \
+  --i-table MATERIAL/material-table90k.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --o-summary MATERIAL/material-table-vis90k.qzv \
+  --o-feature-frequencies MATERIAL/material-freq.qza \
+  --o-sample-frequencies MATERIAL/material-sample-freq.qza
+
+qiime diversity alpha-rarefaction \
+    --i-table MATERIAL/material-table90k.qza \
+    --i-phylogeny rooted-tree90k.qza \
+    --p-max-depth 10000 \
+    --m-metadata-file metadata_with_added_cols90k.tsv \
+    --o-visualization MATERIAL/material-alpha-rarefaction90k.qzv
+
+qiime taxa barplot \
+  --i-table MATERIAL/material-table90k.qza \
+  --i-taxonomy taxonomy90k-vsearch.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --o-visualization MATERIAL/material-barplot90k.qzv
+
 qiime diversity core-metrics-phylogenetic \
-  --i-table nest-table90k.qza \
+  --i-table MATERIAL/material-table90k.qza \
   --i-phylogeny rooted-tree90k.qza \
-  --p-sampling-depth 15000 \
+  --p-sampling-depth 9000 \
   --m-metadata-file metadata_with_added_cols90k.tsv \
   --p-n-jobs-or-threads 4 \
-  --output-dir nest-results
+  --output-dir MATERIAL/MAT-results
 
-# --- Using the result folder: Alpha diversity significance ---
+--- Statistical Tests ---
+now using the ns-nm-result folder. we can test different things 
+
 qiime diversity alpha-group-significance \
-  --i-alpha-diversity nest-results/shannon_vector.qza \
-  --m-metadata-file metadata_with_added_cols90k.tsv \
-  --o-visualization nest-results/shannon-group-significance.qzv
+    --i-alpha-diversity MATERIAL/MAT-results/shannon_vector.qza \
+    --m-metadata-file metadata_with_added_cols90k.tsv \
+    --o-visualization MATERIAL/MAT-results/shannon-group-significance.qzv
 
-# --- Using the result folder: Beta diversity significance ---
 qiime diversity beta-group-significance \
-  --i-distance-matrix nest-results/bray_curtis_distance_matrix.qza \
+  --i-distance-matrix MATERIAL/MAT-results/bray_curtis_distance_matrix.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
   --m-metadata-column "species" \
   --p-pairwise \
-  --o-visualization nest-results/bray_curtis_species-significance.qzv
+  --o-visualization MATERIAL/MAT-results/bray_curtis-species-significance.qzv
 
-# --- Differential Abundance (ANCOM) ---
-qiime feature-table filter-features \
-  --i-table nest-table90k.qza \
-  --p-min-samples 5 \
-  --p-min-frequency 20 \
-  --o-filtered-table filtered-nest-table90k.qza
 
-qiime composition add-pseudocount \
-  --i-table filtered-nest-table90k.qza \
-  --o-composition-table filtered-nest-table90k.qza
+# -------------------- Differential Abundance --------------------
 
-qiime composition ancom \
-  --i-table filtered-nest-table90k.qza \
+qiime composition ancombc2 \
+  --i-table MATERIAL/material-table90k.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
-  --m-metadata-column species \
-  --o-visualization nest-results/ancom-nest-by-species.qzv
+  --p-fixed-effects-formula "species" \
+  --p-reference-levels "species::mb" \
+  --o-ancombc2-output MATERIAL/ancombc2-species-results90k.qza
+
+qiime composition ancombc2-visualizer \
+  --i-data MATERIAL/ancombc2-species-results90k.qza \
+  --i-taxonomy taxonomy90k-vsearch.qza \
+  --o-visualization MATERIAL/ancombc2-species-barplot90k.qzv
