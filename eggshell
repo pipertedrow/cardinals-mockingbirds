@@ -64,16 +64,12 @@ qiime diversity beta-group-significance \
 
 
 
-
-
-
-
 --- Differential Abundance ---
 qiime feature-table filter-samples \
     --i-table EGGSHELL/eggshell-table90k.qza \
     --m-metadata-file metadata_with_added_cols90k.tsv \
     --p-where "[species]='nc'" \
-    --o-filtered-table cardinal.qza
+    --o-filtered-table EGGSHELL/egg_cardinal.qza
 
 qiime feature-table filter-features \
     --i-table asv-table90k-ms2.qza \
@@ -92,16 +88,3 @@ qiime composition ancom \
   --m-metadata-column "species" \
   --o-visualization ancom-samples.qzv
 
-### extra! to filter out blanks from table 
-qiime feature-table filter-samples \
-  --i-table comp-ancom.qza \
-  --m-metadata-file metadata_with_added_cols90k.tsv \
-  --p-where "[species] != ''" \
-  --o-filtered-table comp-ancom-no-blanks.qza
-
-
-qiime feature-table filter-features \
-  --i-table asv-table90k.qza \
-  --m-metadata-file blank-features.qza \
-  --p-exclude-ids \
-  --o-filtered-table table-decontaminated.qza
