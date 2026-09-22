@@ -243,11 +243,11 @@ qiime diversity alpha-group-significance \
     --o-visualization FINAL-results/shannon-group-significance.qzv
 
 qiime diversity beta-group-significance \
-  --i-distance-matrix FINAL-results/jaccard_distance_matrix.qza \
+  --i-distance-matrix FINAL-results/bray_curtis_distance_matrix.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
   --m-metadata-column "species" \
   --p-pairwise \
-  --o-visualization FINAL-results/jaccard-species-significance.qzv
+  --o-visualization FINAL-results/bray-species-significance.qzv
 
 --- Differential Abundance ---
 qiime feature-table filter-samples \
