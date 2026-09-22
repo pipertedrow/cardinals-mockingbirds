@@ -108,7 +108,7 @@ qiime feature-table filter-samples \
 
 ## 2) Filter features (your original thresholds kept)
 qiime feature-table filter-features \
-  --i-table egg_cardinal.qza \
+  --i-table EGGSHELL/eggshell-table90k.qza \
   --p-min-samples 5 \
   --p-min-frequency 20 \
   --o-filtered-table EGGSHELL/filtered-ancom.qza
@@ -124,7 +124,7 @@ qiime composition add-pseudocount \
 
 ## 4) Run ANCOM-BC2
 qiime composition ancombc2 \
-  --i-table table-FINAL-no-blanks90k.qza \
+  --i-table EGGSHELL/.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
   --p-fixed-effects-formula "species" \
   --p-reference-levels "species::mb" \
