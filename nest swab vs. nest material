@@ -1,107 +1,94 @@
 --- Downstream Analysis ---
 create new folder for filtered table and data 
-mkdir -p /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/all_samples/subset_pilotsamples/EGGSHELL
+mkdir -p /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/all_samples/subset_pilotsamples/SWAB
 
-cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/all_samples/subset_pilotsamples/EGGSHELL
+cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/all_samples/subset_pilotsamples/SWAB
 
-Step 2) Filtered Data  
+Step 2) Filter table for nest swabs 
 qiime feature-table filter-samples \
   --i-table table-FINAL-no-blanks90k.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
-  --p-where "[sample type] in ('e')" \
-  --o-filtered-table EGGSHELL/eggshell-table90k.qza
+  --p-where "[sample type] in ('ns')" \
+  --o-filtered-table SWAB/swab-table90k.qza
 
 Step 3) Visualize Filtered table 
 qiime feature-table summarize \
-  --i-table EGGSHELL/eggshell-table90k.qza \
+  --i-table SWAB/swab-table90k.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
-  --o-summary EGGSHELL/eggshell-table-vis90k.qzv \
-  --o-feature-frequencies EGGSHELL/EGG-freq.qza \
-  --o-sample-frequencies EggSHELL/EGG-sample-freq.qza
+  --o-summary SWAB/swab-table-vis90k.qzv \
+  --o-feature-frequencies SWAB/swab-freq.qza \
+  --o-sample-frequencies SWAB/swab-sample-freq.qza
 
 Step 4) Alpha Rarfraction 
 qiime diversity alpha-rarefaction \
-    --i-table EGGSHELL/eggshell-table90k.qza \
+    --i-table SWAB/swab-table90k.qza \
     --i-phylogeny rooted-tree90k.qza \
-    --p-max-depth 5000 \
+    --p-max-depth 10000 \
     --m-metadata-file metadata_with_added_cols90k.tsv \
-    --o-visualization EGGSHEll/egg-alpha-rarefaction90k.qzv
+    --o-visualization SWAB/swab-alpha-rarefaction90k.qzv
 
 Step 5) Taxa Barplot 
 qiime taxa barplot \
-  --i-table EGGSHELL/eggshell-table90k.qza \
+  --i-table SWAB/swab-table90k.qza \
   --i-taxonomy taxonomy90k-vsearch.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
-  --o-visualization EGGSHELL/egg-barplot90k.qzv
+  --o-visualization SWAB/swab-barplot90k.qzv
 
 Step 7) Core Metrics 
 qiime diversity core-metrics-phylogenetic \
-  --i-table EGGSHELL/eggshell-table90k.qza \
+  --i-table SWAB/swab-table90k.qza \
   --i-phylogeny rooted-tree90k.qza \
-  --p-sampling-depth 5000 \
+  --p-sampling-depth 9000 \
   --m-metadata-file metadata_with_added_cols90k.tsv \
   --p-n-jobs-or-threads 4 \
-  --output-dir EGGSHELL/EGG-results
+  --output-dir SWAB/SWAB-results
 
 --- Statistical Tests ---
 now using the ns-nm-result folder. we can test different things 
 
 qiime diversity alpha-group-significance \
-    --i-alpha-diversity EGGSHELL/EGG-results/shannon_vector.qza \
+    --i-alpha-diversity SWAB/SWAB-results/shannon_vector.qza \
     --m-metadata-file metadata_with_added_cols90k.tsv \
-    --o-visualization EGGSHELL/EGG-results/shannon-group-significance.qzv
+    --o-visualization SWAB/SWAB-results/shannon-group-significance.qzv
 
 qiime diversity beta-group-significance \
-  --i-distance-matrix EGGSHELL/EGG-results/bray_curtis_distance_matrix.qza \
+  --i-distance-matrix SWAB/SWAB-results/bray_curtis_distance_matrix.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
   --m-metadata-column "species" \
   --p-pairwise \
-  --o-visualization EGGSHELL/EGG-results/bray_curtis-species-significance.qzv
+  --o-visualization SWAB/SWAB-results/bray_curtis-species-significance.qzv
 
 
-
-#### this is as far as i got!!!! 
-
+# -------------------- Differential Abundance --------------------
 
 
-
-
-
-
---- Differential Abundance ---
-qiime feature-table filter-samples \
-    --i-table EGGSHELL/eggshell-table90k.qza \
-    --m-metadata-file metadata_with_added_cols90k.tsv \
-    --p-where "[species]='nc'" \
-    --o-filtered-table cardinal.qza
-
+## 2) Filter features (your original thresholds kept)
 qiime feature-table filter-features \
-    --i-table asv-table90k-ms2.qza \
-    --p-min-samples 5 \
-    --p-min-frequency 20 \
-    --o-filtered-table filtered-ancom.qza
+  --i-table SWAB/swab-table90k.qza \
+  --p-min-samples 5 \
+  --p-min-frequency 20 \
+  --o-filtered-table SWAB/filtered-ancom.qza
 
+
+## 3) Add pseudocount
 qiime composition add-pseudocount \
-    --i-table filtered-ancom.qza \
-    --o-composition-table comp-ancom.qza
+  --i-table SWAB/filtered-ancom.qza \
+  --o-composition-table SWAB/comp-ancom.qza
 
-#run ancom 
-qiime composition ancom \
-  --i-table comp-ancom-no-blanks.qza \
+
+# ---- OPTION 2 (prettier) ----
+
+## 4) Run ANCOM-BC2
+qiime composition ancombc2 \
+  --i-table SWAB/swab-table90k.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
-  --m-metadata-column "species" \
-  --o-visualization ancom-samples.qzv
-
-### extra! to filter out blanks from table 
-qiime feature-table filter-samples \
-  --i-table comp-ancom.qza \
-  --m-metadata-file metadata_with_added_cols90k.tsv \
-  --p-where "[species] != ''" \
-  --o-filtered-table comp-ancom-no-blanks.qza
+  --p-fixed-effects-formula "species" \
+  --p-reference-levels "species::mb" \
+  --o-ancombc2-output SWAB/ancombc2-species-results90k.qza
 
 
-qiime feature-table filter-features \
-  --i-table asv-table90k.qza \
-  --m-metadata-file blank-features.qza \
-  --p-exclude-ids \
-  --o-filtered-table table-decontaminated.qza
+## 5) Generate visualization
+qiime composition ancombc2-visualizer \
+  --i-data SWAB/ancombc2-species-results90k.qza \
+  --i-taxonomy taxonomy90k-vsearch.qza \
+  --o-visualization SWAB/ancombc2-species-barplot90k.qzv
