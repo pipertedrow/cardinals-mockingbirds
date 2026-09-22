@@ -124,7 +124,7 @@ qiime composition add-pseudocount \
 
 ## 4) Run ANCOM-BC2
 qiime composition ancombc2 \
-  --i-table EGGSHELL/comp_ancom.qza \
+  --i-table EGGSHELL/eggshell-table90k.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
   --p-fixed-effects-formula "species" \
   --p-reference-levels "species::mb" \
