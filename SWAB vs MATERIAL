@@ -1,1 +1,70 @@
+--- Downstream Analysis ---
+create new folder for filtered table and data 
+mkdir -p /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/all_samples/subset_pilotsamples/COMPARE
 
+cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/all_samples/subset_pilotsamples
+
+
+qiime feature-table filter-samples \
+  --i-table table-FINAL-no-blanks90k.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-where "[sample type] in ('nm','ns')" \
+  --o-filtered-table COMPARE/swab-vs-material-table90k.qza
+
+qiime feature-table summarize \
+  --i-table MATERIAL/material-table90k.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --o-summary MATERIAL/material-table-vis90k.qzv \
+  --o-feature-frequencies MATERIAL/material-freq.qza \
+  --o-sample-frequencies MATERIAL/material-sample-freq.qza
+
+qiime diversity alpha-rarefaction \
+    --i-table MATERIAL/material-table90k.qza \
+    --i-phylogeny rooted-tree90k.qza \
+    --p-max-depth 10000 \
+    --m-metadata-file metadata_with_added_cols90k.tsv \
+    --o-visualization MATERIAL/material-alpha-rarefaction90k.qzv
+
+qiime taxa barplot \
+  --i-table MATERIAL/material-table90k.qza \
+  --i-taxonomy taxonomy90k-vsearch.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --o-visualization MATERIAL/material-barplot90k.qzv
+
+qiime diversity core-metrics-phylogenetic \
+  --i-table MATERIAL/material-table90k.qza \
+  --i-phylogeny rooted-tree90k.qza \
+  --p-sampling-depth 9000 \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-n-jobs-or-threads 4 \
+  --output-dir MATERIAL/MAT-results
+
+--- Statistical Tests ---
+now using the ns-nm-result folder. we can test different things 
+
+qiime diversity alpha-group-significance \
+    --i-alpha-diversity MATERIAL/MAT-results/shannon_vector.qza \
+    --m-metadata-file metadata_with_added_cols90k.tsv \
+    --o-visualization MATERIAL/MAT-results/shannon-group-significance.qzv
+
+qiime diversity beta-group-significance \
+  --i-distance-matrix MATERIAL/MAT-results/bray_curtis_distance_matrix.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --m-metadata-column "species" \
+  --p-pairwise \
+  --o-visualization MATERIAL/MAT-results/bray_curtis-species-significance.qzv
+
+
+# -------------------- Differential Abundance --------------------
+
+qiime composition ancombc2 \
+  --i-table MATERIAL/material-table90k.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-fixed-effects-formula "species" \
+  --p-reference-levels "species::mb" \
+  --o-ancombc2-output MATERIAL/ancombc2-species-results90k.qza
+
+qiime composition ancombc2-visualizer \
+  --i-data MATERIAL/ancombc2-species-results90k.qza \
+  --i-taxonomy taxonomy90k-vsearch.qza \
+  --o-visualization MATERIAL/ancombc2-species-barplot90k.qzv
