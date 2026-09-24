@@ -35,8 +35,8 @@ done
 
 --- Visualize Manifest ---
 qiime metadata tabulate \
-  --m-input-file manifest90k.tsv \
-  --o-visualization manifest90k.qzv
+  --m-input-file metadata_with_added_cols90k.tsv \
+  --o-visualization metadata_with_added_cols90k.qzv
 
 --- 90K Demultiplex Data ---
 qiime tools import \
@@ -325,5 +325,11 @@ qiime composition ancombc2-visualizer \
   --i-data FINAL-results/ancombc2-species-results90k.qza \
   --i-taxonomy taxonomy90k-vsearch.qza \
   --o-visualization FINAL-results/ancombc2-species-barplot90k.qzv
+
+
+###### export shannon diversity index #### 
+qiime tools export \
+  --input-path FINAL-results/shannon_vector.qza \
+  --output-path FINAL-results/exported-shannon
 
 
