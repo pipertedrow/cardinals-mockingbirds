@@ -1,0 +1,135 @@
+--- Downstream Analysis ---
+create new folder for filtered table and data 
+mkdir -p /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/all_samples/subset_pilotsamples/LINING/cardinal
+
+cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/all_samples/subset_pilotsamples
+
+
+qiime feature-table filter-samples \
+  --i-table table-FINAL-no-blanks90k.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-where "[lining proportion] in ('Low', 'High')" \
+  --o-filtered-table LINING/lining-table90k.qza
+
+qiime feature-table summarize \
+  --i-table  LINING/lining-table90k.qza\
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --o-summary LINING/lining-table-vis90k.qzv \
+  --o-feature-frequencies LINING/lining-freq.qza \
+  --o-sample-frequencies LINING/lining-sum-freq.qza
+
+qiime diversity alpha-rarefaction \
+    --i-table LINING/lining-table90k.qza \
+    --i-phylogeny rooted-tree90k.qza \
+    --p-max-depth 7000 \
+    --m-metadata-file metadata_with_added_cols90k.tsv \
+    --o-visualization LINING/lining-alpha-rarefaction90k.qzv
+
+qiime taxa barplot \
+  --i-table LINING/lining-table90k.qza \
+  --i-taxonomy taxonomy90k-vsearch.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --o-visualization LINING/lining-barplot90k.qzv
+
+qiime diversity core-metrics-phylogenetic \
+  --i-table LINING/lining-table90k.qza \
+  --i-phylogeny rooted-tree90k.qza \
+  --p-sampling-depth 7000 \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-n-jobs-or-threads 4 \
+  --output-dir LINING/lining-results
+
+--- Statistical Tests ---
+
+qiime diversity alpha-group-significance \
+    --i-alpha-diversity LINING/lining-results/shannon_vector.qza \
+    --m-metadata-file metadata_with_added_cols90k.tsv \
+    --o-visualization LINING/lining-results/shannon-group-significance.qzv
+
+qiime diversity beta-group-significance \
+  --i-distance-matrix LINING/lining-results/bray_curtis_distance_matrix.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --m-metadata-column "lining proportion" \
+  --p-pairwise \
+  --o-visualization LINING/lining-results/bray_curtis-lining-significance.qzv
+
+
+# -------------------- Differential Abundance --------------------
+
+qiime composition ancombc2 \
+  --i-table LINING/lining-table90k.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-fixed-effects-formula "lining proportion" \
+  --p-reference-levels "lining proportion::Low" \
+  --o-ancombc2-output LINING/ancombc2-lining-results90k.qza
+
+qiime composition ancombc2-visualizer \
+  --i-data LINING/ancombc2-lining-results90k.qza \
+  --i-taxonomy taxonomy90k-vsearch.qza \
+  --o-visualization LINING/ancombc2-lining-barplot90k.qzv
+
+
+#### cardinal lining only 
+
+qiime feature-table filter-samples \
+  --i-table table-FINAL-no-blanks90k.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-where "[species] in ('nc')" \
+  --o-filtered-table LINING/cardinal/cardinal-table90k.qza
+
+qiime feature-table summarize \
+  --i-table  LINING/cardinal/cardinal-table90k.qza\
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --o-summary LINING/cardinal/cardinal-table-vis90k.qzv \
+  --o-feature-frequencies LINING/cardinal/cardinal-freq.qza \
+  --o-sample-frequencies LINING/cardinal/cardinal-sum-freq.qza
+
+qiime diversity alpha-rarefaction \
+    --i-table LINING/cardinal/cardinal-table90k.qza \
+    --i-phylogeny rooted-tree90k.qza \
+    --p-max-depth 5500 \
+    --m-metadata-file metadata_with_added_cols90k.tsv \
+    --o-visualization LINING/cardinal/cardinal-alpha-rarefaction90k.qzv
+
+qiime taxa barplot \
+  --i-table LINING/cardinal/cardinal-table90k.qza \
+  --i-taxonomy taxonomy90k-vsearch.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --o-visualization LINING/cardinal/cardinal-barplot90k.qzv
+
+qiime diversity core-metrics-phylogenetic \
+  --i-table LINING/cardinal/cardinal-table90k.qza \
+  --i-phylogeny rooted-tree90k.qza \
+  --p-sampling-depth 5500 \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-n-jobs-or-threads 4 \
+  --output-dir LINING/cardinal/cardinal-results
+
+--- Statistical Tests ---
+
+qiime diversity alpha-group-significance \
+    --i-alpha-diversity LINING/cardinal/cardinal-results/shannon_vector.qza \
+    --m-metadata-file metadata_with_added_cols90k.tsv \
+    --o-visualization LINING/cardinal/cardinal-results/shannon-group-significance.qzv
+
+qiime diversity beta-group-significance \
+  --i-distance-matrix LINING/cardinal/cardinal-results/bray_curtis_distance_matrix.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --m-metadata-column "lining proportion" \
+  --p-pairwise \
+  --o-visualization LINING/cardinal/cardinal-results/bray_curtis-lining-significance.qzv
+
+
+# -------------------- Differential Abundance --------------------
+
+qiime composition ancombc2 \
+  --i-table LINING/lining-table90k.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-fixed-effects-formula "lining proportion" \
+  --p-reference-levels "lining proportion::Low" \
+  --o-ancombc2-output LINING/ancombc2-lining-results90k.qza
+
+qiime composition ancombc2-visualizer \
+  --i-data LINING/ancombc2-species-results90k.qza \
+  --i-taxonomy taxonomy90k-vsearch.qza \
+  --o-visualization MATERIAL/ancombc2-species-barplot90k.qzv
