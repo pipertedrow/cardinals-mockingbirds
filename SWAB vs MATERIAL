@@ -1,70 +1,73 @@
---- Downstream Analysis ---
-create new folder for filtered table and data 
+### Downstream Analysis ###
+# create new folder for filtered table and data using the file scheme
 mkdir -p /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/all_samples/subset_pilotsamples/COMPARE
 
 cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/all_samples/subset_pilotsamples
 
-
+# 1) Filter samples: keep ns and nm
 qiime feature-table filter-samples \
   --i-table table-FINAL-no-blanks90k.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
   --p-where "[sample type] in ('nm','ns')" \
   --o-filtered-table COMPARE/swab-vs-material-table90k.qza
 
+# 2) Summaries (use the filtered table as input to keep scheme consistent)
 qiime feature-table summarize \
-  --i-table MATERIAL/material-table90k.qza \
+  --i-table COMPARE/swab-vs-material-table90k.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
-  --o-summary MATERIAL/material-table-vis90k.qzv \
-  --o-feature-frequencies MATERIAL/material-freq.qza \
-  --o-sample-frequencies MATERIAL/material-sample-freq.qza
+  --o-summary COMPARE/swab-vs-material-table-vis90k.qzv \
+  --o-feature-frequencies COMPARE/swab-vs-material-freq.qza \
+  --o-sample-frequencies COMPARE/swab-vs-material-sample-freq.qza
 
+# 3) Alpha rarefaction
 qiime diversity alpha-rarefaction \
-    --i-table MATERIAL/material-table90k.qza \
-    --i-phylogeny rooted-tree90k.qza \
-    --p-max-depth 10000 \
-    --m-metadata-file metadata_with_added_cols90k.tsv \
-    --o-visualization MATERIAL/material-alpha-rarefaction90k.qzv
+  --i-table COMPARE/swab-vs-material-table90k.qza \
+  --i-phylogeny rooted-tree90k.qza \
+  --p-max-depth 7000 \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --o-visualization COMPARE/swab-vs-material-alpha-rarefaction90k.qzv
 
+# 4) Taxa barplot
 qiime taxa barplot \
-  --i-table MATERIAL/material-table90k.qza \
+  --i-table COMPARE/swab-vs-material-table90k.qza \
   --i-taxonomy taxonomy90k-vsearch.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
-  --o-visualization MATERIAL/material-barplot90k.qzv
+  --o-visualization COMPARE/swab-vs-material-barplot90k.qzv
 
+# 5) Core metrics
 qiime diversity core-metrics-phylogenetic \
-  --i-table MATERIAL/material-table90k.qza \
+  --i-table COMPARE/swab-vs-material-table90k.qza \
   --i-phylogeny rooted-tree90k.qza \
-  --p-sampling-depth 9000 \
+  --p-sampling-depth 7000 \
   --m-metadata-file metadata_with_added_cols90k.tsv \
   --p-n-jobs-or-threads 4 \
-  --output-dir MATERIAL/MAT-results
+  --output-dir COMPARE/swab-vs-material-results
 
---- Statistical Tests ---
-now using the ns-nm-result folder. we can test different things 
+### Statistical Tests
 
 qiime diversity alpha-group-significance \
-    --i-alpha-diversity MATERIAL/MAT-results/shannon_vector.qza \
-    --m-metadata-file metadata_with_added_cols90k.tsv \
-    --o-visualization MATERIAL/MAT-results/shannon-group-significance.qzv
+  --i-alpha-diversity COMPARE/swab-vs-material-results/shannon_vector.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --o-visualization COMPARE/swab-vs-material-results/shannon-group-significance.qzv
 
 qiime diversity beta-group-significance \
-  --i-distance-matrix MATERIAL/MAT-results/bray_curtis_distance_matrix.qza \
+  --i-distance-matrix COMPARE/swab-vs-material-results/jaccard_distance_matrix.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
-  --m-metadata-column "species" \
+  --m-metadata-column "sample type" \
   --p-pairwise \
-  --o-visualization MATERIAL/MAT-results/bray_curtis-species-significance.qzv
+  --o-visualization COMPARE/swab-vs-material-results/jaccard-sampletype-significance.qzv
 
 
 # -------------------- Differential Abundance --------------------
 
 qiime composition ancombc2 \
-  --i-table MATERIAL/material-table90k.qza \
+  --i-table COMPARE/swab-vs-material/swab-vs-material-table90k.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
   --p-fixed-effects-formula "species" \
   --p-reference-levels "species::mb" \
-  --o-ancombc2-output MATERIAL/ancombc2-species-results90k.qza
+  --o-ancombc2-output COMPARE/swab-vs-material/ancombc2-species-results90k.qza
 
 qiime composition ancombc2-visualizer \
-  --i-data MATERIAL/ancombc2-species-results90k.qza \
+  --i-data COMPARE/swab-vs-material/ancombc2-species-results90k.qza \
   --i-taxonomy taxonomy90k-vsearch.qza \
-  --o-visualization MATERIAL/ancombc2-species-barplot90k.qzv
+  --o-visualization COMPARE/swab-vs-material/ancombc2-species-barplot90k.qzv
