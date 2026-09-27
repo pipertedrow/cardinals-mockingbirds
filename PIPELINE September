@@ -1,3 +1,14 @@
+export to r code 
+
+biom convert \
+  -i feature_table_export/feature-table.biom \
+  -o feature_table_export/feature-table.tsv \
+  --to-tsv
+
+qiime tools export \ 
+--input-path table-FINAL-no-blanks90k.qza
+--output-path exported-feature-table
+
 After reading paired-end-demux.qzv the smallest amount of reads is 95k. So we subset all the data to 90k and then follow the same pipeline 
 
 1) --- Start up ---
@@ -35,7 +46,7 @@ done
 
 --- Visualize Manifest ---
 qiime metadata tabulate \
-  --m-input-file metadata_with_added_cols90k.tsv \
+--m-input-file metadata_with_added_cols90k.tsv \
   --o-visualization metadata_with_added_cols90k.qzv
 
 --- 90K Demultiplex Data ---
