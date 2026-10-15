@@ -177,43 +177,93 @@ qiime phylogeny align-to-tree-mafft-fasttree \
   --o-tree unrooted-tree-decontam90k-ms2-nomito.qza \
   --o-rooted-tree rooted-tree-decontam90k-ms2-nomito.qza
 
+--- Remove Blank Samples (controls) ---
+qiime feature-table filter-samples \
+  --i-table decontam-table90k-ms2-nomito.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-where "[Sample_or_Control]='sample'" \
+  --o-filtered-table final-table.qza
 
 --- Downstream Analysis ---
 
 Visualize Feature Table to Set Depth
 qiime feature-table summarize \
-  --i-table decontam-table90k-ms2-nomito.qza \
+  --i-table final-table.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
-  --o-summary decontam-table90k-ms2-nomito.qzv \
-  --o-feature-frequencies decontam-table90k-ms2-feature-freq.qza \
-  --o-sample-frequencies decontam-table90k-ms2-sample-freq.qza
+  --o-summary final-table.qzv \
+  --o-feature-frequencies final-table-freq.qza \
+  --o-sample-frequencies final-table-seq-freq.qza
 
 ### minimum depth was 37,650 so nromalized to 37,600 
 Alpha Rarefaction
 qiime diversity alpha-rarefaction \
-    --i-table decontam-table90k-ms2-nomito.qza \
+    --i-table final-table.qza \
     --i-phylogeny rooted-tree-decontam90k-ms2-nomito.qza \
     --p-max-depth 37600 \
     --m-metadata-file metadata_with_added_cols90k.tsv \
-    --o-visualization alpha-rarefaction90k.qzv
+    --o-visualization final-alpha-rarefaction90k.qzv
 
 Taxa Barplot
 qiime taxa barplot \
-  --i-table decontam-table90k-ms2-nomito.qza \
+  --i-table final-table.qza \
   --i-taxonomy taxonomy90k-vsearch.qza \
   --m-metadata-file metadata_with_added_cols90k.tsv \
-  --o-visualization taxa-barplot90k.qzv
+  --o-visualization final-taxa-barplot90k.qzv
 
 Core Metrics 
 qiime diversity core-metrics-phylogenetic \
-  --i-table decontam-table90k-ms2-nomito.qza \
+  --i-table final-table.qza \
   --i-phylogeny rooted-tree-decontam90k-ms2-nomito.qza \
   --p-sampling-depth 37600 \
   --m-metadata-file metadata_with_added_cols90k.tsv \
   --p-n-jobs-or-threads 4 \
-  --output-dir results-october/core-metrics
+  --output-dir core-metrics
 
 ## yay ready for analysis
 
 --- Exporting for r Studio ---
+I need export metadata, taxonomy, feature table, and rooted tree 
+export as .tsvs for R stduio 
+
+# Step 1: Export the qza (unzips to biom format)
+qiime tools export \
+  --input-path decontam-table90k-ms2-nomito.qza \
+  --output-path exported-table
+
+# Step 2: Convert biom → tsv
+biom convert \
+  -i exported-table/feature-table.biom \
+  -o exported-table/feature-table.tsv \
+  --to-tsv
+
+qiime tools export \
+  --input-path taxonomy90k-vsearch.qza \
+  --output-path exported-taxonomy
+
+# File will already be named taxonomy.tsv
+ls exported-taxonomy/
+# → taxonomy.tsv
+
+qiime tools export \
+  --input-path rooted-tree-decontam90k-ms2-nomito.qza \
+  --output-path exported-tree
+
+# File will be named tree.nwk
+ls exported-tree/
+# → tree.nwk
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
