@@ -1,0 +1,105 @@
+1) check for primers 
+checking for sequence primers with cutadapt in QIIME2 autosearches for regex 
+
+qiime cutadapt trim-paired \
+  --i-demultiplexed-sequences paired-end-demux90k.qza \
+  --p-front-f GTGYCAGCMGCCGCGGTAA \
+  --p-front-r GGACTACNVGGGTWTCTAAT \
+  --p-match-adapter-wildcards \
+  --p-discard-untrimmed \
+  --o-trimmed-sequences paired-end-demux-trimmed.qza \
+  --verbose
+
+qiime demux summarize \
+  --i-data paired-end-demux-trimmed.qza \
+  --o-visualization paired-end-demux-trimmed.qzv
+
+
+=== First read: Adapter 1 ===
+
+Sequence: GTGYCAGCMGCCGCGGTAA; Type: regular 5'; Length: 19; Trimmed: 89133 times
+
+Minimum overlap: 3
+No. of allowed errors:
+1-9 bp: 0; 10-19 bp: 1
+
+Overview of removed sequences
+length	count	expect	max.err	error counts
+13	1	0.0	1	1
+14	1	0.0	1	0 1
+15	1	0.0	1	0 1
+16	2	0.0	1	0 2
+17	34	0.0	1	10 24
+18	1961	0.0	1	327 1634
+19	86892	0.0	1	81211 5681
+20	239	0.0	1	31 208
+24	1	0.0	1	1
+231	1	0.0	1	0 1
+
+
+=== Second read: Adapter 2 ===
+
+Sequence: GGACTACNVGGGTWTCTAAT; Type: regular 5'; Length: 20; Trimmed: 89474 times
+
+Minimum overlap: 3
+No. of allowed errors:
+1-9 bp: 0; 10-19 bp: 1
+
+Overview of removed sequences
+length	count	expect	max.err	error counts
+3	2	1406.2	0	2
+16	1	0.0	1	0 1
+17	6	0.0	1	0 6
+18	127	0.0	1	17 110
+19	2949	0.0	1	930 2019
+20	86227	0.0	1	83415 2812
+21	162	0.0	1	38 124
+
+END: primers removed successfully 
+
+2) run DECONTAM (first i need to rerun DADA2) 
+to run decontam i need a column of my samples versus control. I used claude code to help me make this new column 
+
+This makes Sample_or_Control column 
+python -c "
+import pandas as pd
+df = pd.read_csv('metadata_with_added_cols90k.tsv', sep='\t')
+sample_id_col = df.columns[0]
+df['Sample_or_Control'] = 'sample'
+blanks = ['blank-1_S59', 'blank-2_S60', 'blank-3_S61']
+df.loc[df[sample_id_col].isin(blanks), 'Sample_or_Control'] = 'control'
+df.to_csv('metadata_with_added_cols90k.tsv', sep='\t', index=False)
+print(df[[sample_id_col, 'Sample_or_Control']])
+"
+This makes Concentration column from Quality check done by UMGC 
+opened metadata .tsv file in Numbers on mac 
+then manually added the concentration column and saved it back as .tsv 
+we are now ready for decontam 
+
+--- DECONTAM ---
+###run decontam on feature table 
+###first identify contamination 
+
+qiime quality-control decontam-identify \
+  --i-table asv-table90k.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-method combined \
+  --p-freq-concentration-column Concentration \
+  --p-prev-control-column Sample_or_Control \
+  --p-prev-control-indicator control \
+  --o-decontam-scores comb-decontam-scores90k.qza
+
+qiime quality-control decontam-score-viz \
+  --i-decontam-scores comb-decontam-scores90k.qza \
+  --i-table asv-table90k.qza \
+  --i-rep-seqs asv-seqs90k.qza \
+  --p-threshold 0.1 \
+  --p-no-weighted \
+  --p-bin-size 0.05 \
+  --o-visualization decontam-score-viz90k.qzv
+
+
+
+
+
+
