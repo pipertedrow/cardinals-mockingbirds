@@ -1,0 +1,219 @@
+After reading paired-end-demux.qzv the smallest amount of reads is 95k. So we subset all the data to 90k and then follow the same pipeline 
+
+1) --- Start up ---
+conda deactivate 
+Activate docker container 
+open -a Docker
+ docker run \
+  -v $(pwd):/data \
+  -it quay.io/qiime2/qiime2:2026.4
+cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/all_samples
+
+--- Make New File and Subset Data ---
+mkdir -p subset_pilotsamples
+
+for r1 in *_R1_*.fastq.gz; do
+  r2=$(echo $r1 | sed 's/_R1_/_R2_/')
+  sample=$(echo $r1 | sed 's/_R1_.*//')
+
+  seqtk sample -s100 "$r1" 90000 | gzip > subset_pilotsamples/${sample}_R1_90k.fastq.gz
+  seqtk sample -s100 "$r2" 90000 | gzip > subset_pilotsamples/${sample}_R2_90k.fastq.gz
+done
+
+--- Set Wokring Directory ---
+cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/all_samples/subset_pilotsamples
+
+--- 90K Manifest ---
+echo -e "sample-id\tforward-absolute-filepath\treverse-absolute-filepath" > manifest90k.tsv
+
+for f in *_R1_90k.fastq.gz; do
+  sample="${f/_R1_90k.fastq.gz/}"
+  forward="$(pwd)/${f}"
+  reverse="$(pwd)/${f/_R1_90k.fastq.gz/_R2_90k.fastq.gz}"
+  echo -e "${sample}\t${forward}\t${reverse}" >> manifest90k.tsv
+done
+
+--- Visualize Manifest ---
+qiime metadata tabulate \
+--m-input-file metadata_with_added_cols90k.tsv \
+  --o-visualization metadata_with_added_cols90k.qzv
+
+--- 90K Demultiplex Data ---
+qiime tools import \
+  --type 'SampleData[PairedEndSequencesWithQuality]' \
+  --input-path manifest90k.tsv \
+  --output-path paired-end-demux90k.qza \
+  --input-format PairedEndFastqManifestPhred33V2
+
+--- Visualize Demux --- 
+qiime demux summarize \
+  --i-data paired-end-demux90k.qza \
+  --o-visualization paired-end-demux90k.qzv
+
+--- CUT ADAPT Remove Primers ---- 
+## summary output on Robert Redone file 
+
+qiime cutadapt trim-paired \
+  --i-demultiplexed-sequences paired-end-demux90k.qza \
+  --p-front-f GTGYCAGCMGCCGCGGTAA \
+  --p-front-r GGACTACNVGGGTWTCTAAT \
+  --p-match-adapter-wildcards \
+  --p-discard-untrimmed \
+  --o-trimmed-sequences paired-end-demux-trimmed.qza \
+  --verbose
+
+--- Make results folder October-15 ---
+mkdir -p results-october
+cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/all_samples/subset_pilotsamples/results-october
+now we are saving output in october-results 
+
+--- 90k DADA2 ---
+#select forward and reverse truncations first 
+qiime dada2 denoise-paired \
+  --i-demultiplexed-seqs paired-end-demux-trimmed.qza \
+  --p-trim-left-f 0 \
+  --p-trim-left-r 0 \
+  --p-trunc-len-f 240 \
+  --p-trunc-len-r 180 \
+  --p-n-threads 8 \
+  --o-representative-sequences asv-seqs90k.qza \
+  --o-table asv-table90k.qza \
+  --o-denoising-stats denoising-stats90k.qza \
+  --o-base-transition-stats base-transition-stats90k.qza \
+  --verbose
+
+--- DECONTAM ---
+###run decontam on feature table 
+###first identify contamination 
+
+qiime quality-control decontam-identify \
+  --i-table asv-table90k.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-method combined \
+  --p-freq-concentration-column Concentration \
+  --p-prev-control-column Sample_or_Control \
+  --p-prev-control-indicator control \
+  --o-decontam-scores comb-decontam-scores90k.qza
+
+### visluaize the contamination 
+qiime quality-control decontam-score-viz \
+  --i-decontam-scores comb-decontam-scores90k.qza \
+  --i-table asv-table90k.qza \
+  --i-rep-seqs asv-seqs90k.qza \
+  --p-threshold 0.1 \
+  --p-no-weighted \
+  --p-bin-size 0.05 \
+  --o-visualization decontam-score-viz90k.qzv
+
+## remove contaminated ASVs
+qiime feature-table filter-features \
+  --i-table asv-table90k.qza \
+  --m-metadata-file comb-decontam-scores90k.qza \
+  --p-where '[p]>0.1 OR [p] IS NULL' \
+  --o-filtered-table decontam-table90k.qza
+
+##remove contamination from seqs 
+qiime feature-table filter-seqs \
+  --i-data asv-seqs90k.qza \
+  --i-table decontam-table90k.qza \
+  --o-filtered-data decontam-seqs90k.qza
+
+
+--- Visualize Denoising Stats ---
+qiime metadata tabulate \
+  --m-input-file denoising-stats90k.qza \
+  --o-visualization denoising-stats90k.qzv
+
+--- Filter for Minimum 2 Samples --- 
+# Filter out features observed in only 1 sample
+qiime feature-table filter-features \
+  --i-table decontam-table90k.qza \
+  --p-min-samples 2 \
+  --o-filtered-table decontam-table90k-ms2.qza
+
+qiime feature-table filter-seqs \
+  --i-data decontam-seqs90k.qza \
+  --i-table decontam-table90k-ms2.qza \
+  --o-filtered-data decontam-seqs90k-ms2.qza
+
+--- Taxanomic Annotation ---
+qiime feature-classifier classify-consensus-vsearch \
+  --i-query decontam-seqs90k-ms2.qza \
+  --i-reference-reads silva-138-99-seqs-515-806.qza \
+  --i-reference-taxonomy silva-138-99-tax.qza \
+  --p-threads 4 \
+  --o-classification taxonomy90k-vsearch.qza \
+  --o-search-results vsearch-hits.qza
+
+qiime metadata tabulate \
+  --m-input-file taxonomy90k-vsearch.qza \
+  --o-visualization taxonomy90k-vsearch.qzv
+
+qiime taxa barplot \
+  --i-table decontam-table90k-ms2.qza \
+  --i-taxonomy taxonomy90k-vsearch.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --o-visualization taxa-vsearch-barplot90k.qzv
+
+--- REMOVE Mitochondria and Chloroplasts ---
+qiime taxa filter-table \
+  --i-table decontam-table90k-ms2.qza \
+  --i-taxonomy taxonomy90k-vsearch.qza \
+  --p-exclude mitochondria,chloroplast \
+  --o-filtered-table decontam-table90k-ms2-nomito.qza
+
+qiime taxa filter-seqs \
+  --i-sequences decontam-seqs90k-ms2.qza \
+  --i-taxonomy taxonomy90k-vsearch.qza \
+  --p-exclude mitochondria,chloroplast \
+  --o-filtered-sequences decontam-seqs90k-ms2-nomito.qza
+
+--- Generate Phlyogenetic Tree ---
+qiime phylogeny align-to-tree-mafft-fasttree \
+  --i-sequences decontam-seqs90k-ms2-nomito.qza \
+  --p-n-threads 4 \
+  --o-alignment aligned-decontam90k-ms2-nomito.qza \
+  --o-masked-alignment masked-aligned-decontam90k-ms2-nomito.qza \
+  --o-tree unrooted-tree-decontam90k-ms2-nomito.qza \
+  --o-rooted-tree rooted-tree-decontam90k-ms2-nomito.qza
+
+
+--- Downstream Analysis ---
+
+Visualize Feature Table to Set Depth
+qiime feature-table summarize \
+  --i-table decontam-table90k-ms2-nomito.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --o-summary decontam-table90k-ms2-nomito.qzv \
+  --o-feature-frequencies decontam-table90k-ms2-feature-freq.qza \
+  --o-sample-frequencies decontam-table90k-ms2-sample-freq.qza
+
+### minimum depth was 37,650 so nromalized to 37,600 
+Alpha Rarefaction
+qiime diversity alpha-rarefaction \
+    --i-table decontam-table90k-ms2-nomito.qza \
+    --i-phylogeny rooted-tree-decontam90k-ms2-nomito.qza \
+    --p-max-depth 37600 \
+    --m-metadata-file metadata_with_added_cols90k.tsv \
+    --o-visualization alpha-rarefaction90k.qzv
+
+Taxa Barplot
+qiime taxa barplot \
+  --i-table decontam-table90k-ms2-nomito.qza \
+  --i-taxonomy taxonomy90k-vsearch.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --o-visualization taxa-barplot90k.qzv
+
+Core Metrics 
+qiime diversity core-metrics-phylogenetic \
+  --i-table decontam-table90k-ms2-nomito.qza \
+  --i-phylogeny rooted-tree-decontam90k-ms2-nomito.qza \
+  --p-sampling-depth 37600 \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-n-jobs-or-threads 4 \
+  --output-dir results-october/core-metrics
+
+## yay ready for analysis
+
+--- Exporting for r Studio ---
+
