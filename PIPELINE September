@@ -51,10 +51,27 @@ qiime demux summarize \
   --i-data paired-end-demux90k.qza \
   --o-visualization paired-end-demux90k.qzv
 
+--- CUT ADAPT Remove Primers ---- 
+## summary output on Robert Redone file 
+
+qiime cutadapt trim-paired \
+  --i-demultiplexed-sequences paired-end-demux90k.qza \
+  --p-front-f GTGYCAGCMGCCGCGGTAA \
+  --p-front-r GGACTACNVGGGTWTCTAAT \
+  --p-match-adapter-wildcards \
+  --p-discard-untrimmed \
+  --o-trimmed-sequences paired-end-demux-trimmed.qza \
+  --verbose
+
+--- Make results folder October-15 ---
+mkdir -p results-october
+cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/all_samples/subset_pilotsamples/results-october
+now we are saving output in october-results 
+
 --- 90k DADA2 ---
 #select forward and reverse truncations first 
 qiime dada2 denoise-paired \
-  --i-demultiplexed-seqs paired-end-demux90k.qza \
+  --i-demultiplexed-seqs paired-end-demux-trimmed.qza \
   --p-trim-left-f 0 \
   --p-trim-left-r 0 \
   --p-trunc-len-f 240 \
@@ -65,6 +82,43 @@ qiime dada2 denoise-paired \
   --o-denoising-stats denoising-stats90k.qza \
   --o-base-transition-stats base-transition-stats90k.qza \
   --verbose
+
+
+--- DECONTAM ---
+###run decontam on feature table 
+###first identify contamination 
+
+qiime quality-control decontam-identify \
+  --i-table asv-table90k.qza \
+  --m-metadata-file metadata_with_added_cols90k.tsv \
+  --p-method combined \
+  --p-freq-concentration-column Concentration \
+  --p-prev-control-column Sample_or_Control \
+  --p-prev-control-indicator control \
+  --o-decontam-scores comb-decontam-scores90k.qza
+
+### visluaize the contamination 
+qiime quality-control decontam-score-viz \
+  --i-decontam-scores comb-decontam-scores90k.qza \
+  --i-table asv-table90k.qza \
+  --i-rep-seqs asv-seqs90k.qza \
+  --p-threshold 0.1 \
+  --p-no-weighted \
+  --p-bin-size 0.05 \
+  --o-visualization decontam-score-viz90k.qzv
+
+## remove contaminated ASVs
+qiime feature-table filter-features \
+  --i-table asv-table90k.qza \
+  --m-metadata-file comb-decontam-scores90k.qza \
+  --p-where '[p]>0.1 OR [p] IS NULL' \
+  --o-filtered-table decontam-table90k.qza
+
+##remove contamination from seqs 
+qiime feature-table filter-seqs \
+  --i-data asv-seqs90k.qza \
+  --i-table decontam-table90k.qza \
+  --o-filtered-data decontam-seqs90k.qza
 
 --- Set working directory ---
 cd /data/Desktop/Piper/UMGC_Data/Cristol_Project_001/all_samples/subset_pilotsamples
