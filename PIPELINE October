@@ -253,6 +253,15 @@ ls exported-tree/
 # → tree.nwk
 
 
+--- Differential Abundance ---
+
+core-metrics/species-diff-abundance.qzv
+
+### Generate differential abundance barplot
+qiime composition ancombc2-visualizer \
+  --i-data FINAL-results/ancombc2-species-results90k.qza \
+  --i-taxonomy taxonomy90k-vsearch.qza \
+  --o-visualization core-metrics/species-diff-abundance.qzv
 
 
 
